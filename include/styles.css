@@ -1,0 +1,280 @@
+/* *********************************************************** */
+/* Global vars                                                 */
+/* *********************************************************** */
+
+:root {
+	--color-primary: rgb(11, 100, 254);
+
+	--color-code-panel: hsl(0, 0%, 87%);
+	--color-positive: rgb(133, 203, 51);
+	--color-negative: rgb(255, 101, 32);
+
+	--color-page-bg: #f2f2f2;
+	--color-body-text: rgb(0, 0, 0);
+	--color-link: var(--color-primary);
+}
+
+
+/* *********************************************************** */
+/* Page layout                                                 */
+/* *********************************************************** */
+
+
+html, body{
+	font-family: "Poppins", sans-serif;
+	margin: 0;
+	height: 100%;
+}
+::selection {
+	background: var(--color-primary);
+	color: var(--color-page-bg);
+}
+a{
+	color: var(--color-link);
+}
+body{
+	background-color: var(--color-page-bg);
+	color: var(--color-body-text);
+	padding: 2em;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+}
+
+main{
+	width: 100%;
+	margin: 0;
+	display:flex;
+	flex-grow: 1;
+}
+
+.map-container{
+	width: 70%;
+	flex-shrink: 0;
+}
+.config-container{
+	padding-left: 1em;
+	flex-grow: 1;
+}
+
+h1{
+	font-size: 1.4em;
+  	margin: 0 0 1em;
+	font-weight: 500;
+	color: var(--color-primary);
+}
+
+/* *********************************************************** */
+/* Map                                                         */
+/* *********************************************************** */
+
+.map{
+	width: 100%;
+	height: 100%;
+
+	--dz_width: 8px;
+	--hub_width: 16px;
+	--hover_border_width: 2px;
+}
+
+.marker{
+	--marker_width: var(--dz_width);
+
+	background: var(--color-primary);
+	width: var(--marker_width);
+	border-radius: 50%;
+	cursor: pointer;
+	aspect-ratio: 1;
+	box-shadow: 0px 0px 5px 0px white;
+}
+
+[data-show-type-colours='true'] .marker{
+	background: var(--type-colour)
+}
+
+.marker:hover {
+	border: var(--hover_border_width) solid var(--color-primary);
+	background: hsl(0, 0%, 100%);
+	width: calc(var(--marker_width) - (2 * var(--hover_border_width)));
+}
+
+.marker.is_hub {
+	--marker_width: var(--hub_width);
+}
+
+/* *********************************************************** */
+/* Code container                                              */
+/* *********************************************************** */
+
+.code-container{
+	--border-radius: 6px;
+}
+.code-container nav{
+	display:flex;
+}
+.code-container nav a{
+	display:block;
+	text-decoration: none;
+	padding: 0.35em 0.7em 0.2em;
+	background: none;
+	color: black;
+	font-weight: 500;
+	margin-right: 0.3em;
+	font-size: 0.9em;
+	border-top-left-radius: var(--border-radius);
+	border-top-right-radius: var(--border-radius);
+	text-transform: lowercase;
+}
+.code-container nav a:hover{
+	background: var(--color-code-panel);
+}
+
+.code-container[data-selected="csv"] [data-toggle="csv"],
+.code-container[data-selected="geojson"] [data-toggle="geojson"]{
+	background: var(--color-code-panel);
+	font-weight: 600;
+}
+
+.code{
+	background: var(--color-code-panel);
+	width: 100%;
+	min-height: 400px;
+	font-family: "IBM Plex Mono", monospace;
+	font-size: 0.9em;
+	font-weight:400;
+	box-sizing: border-box;
+	border-radius: var(--border-radius);
+	border-top-left-radius: 0px;
+	position: relative;
+}
+
+.code > textarea{
+	--margin: 2px;
+	background: white;
+	padding: 0.3em;
+	border-radius: calc(var(--border-radius) - var(--margin));
+	inset: var(--margin);
+	position: absolute;
+	resize: none;
+	border: none;
+}
+.code > textarea:focus{
+	outline: none;
+}
+.code-container:focus-within .code,
+.code-container:focus-within[data-selected="csv"] [data-toggle="csv"],
+.code-container:focus-within[data-selected="geojson"] [data-toggle="geojson"]{
+	background: var(--color-positive);
+}
+
+
+.code-container[data-selected="csv"] [data-code="geojson"],
+.code-container[data-selected="geojson"] [data-code="csv"]{
+	display: none;
+}
+
+/* *********************************************************** */
+/* Feature options                                             */
+/* *********************************************************** */
+
+.feature-options{
+	font-family: 'Inter', sans-serif;
+}
+.drone-range-wrapper{
+	display: flex;
+	margin: 0.8em 0;
+	align-items: flex-start;
+}
+.drone-range-wrapper .slider{
+	margin: 0 0.5em;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+.drone-range-wrapper datalist{
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	width: 140px;
+	font-size: 0.7em;
+	margin-top: 0.3em;
+}
+
+.drone-range-wrapper .drone-range{
+	width: 150px;
+	margin: 0;
+}
+
+.route-mode-wrapper select{
+	padding:0.4em 0.1em;
+	border-radius: 3px;
+}
+
+.type-colour-wrapper{
+	margin-top:0.5em;
+}
+
+.type-colour-wrapper input{
+	padding:0.4em 0.1em;
+	border-radius: 3px;
+	margin-top:6px;
+}
+
+
+.type-colour-wrapper .type-colours{
+	display: flex;
+	flex-wrap: wrap;
+	margin-top: 5px;
+}
+body:not([data-show-type-colours='true']) .type-colours{display:none;}
+
+.type-colour-wrapper .type-colours span{
+	font-size: 0.85em;
+	display: block;
+	position: relative;
+	text-indent: 17px;
+	width: 50%;
+	margin: 0;
+}
+.type-colour-wrapper .type-colours span::before{
+	content: "";
+	border-radius: 50%;
+	width: 11px;
+	aspect-ratio: 1;
+	background-color: var(--color);
+	position: absolute;
+	left: 0px;
+	top: 2px;
+}
+
+ 
+/* *********************************************************** */
+/* Mouse follower popup                                        */
+/* *********************************************************** */
+
+.mouse-follower{
+	position: fixed;
+	display: flex;
+	pointer-events: none;
+	top: 20px;
+	left: 0px;
+	max-width: 350px;
+	justify-content: center;
+	z-index: 5000;
+}
+.mouse-follower span{
+	display: block;
+	background: var(--color-primary);
+	color: white;
+	font-size: 0.7em;
+	font-weight: 400;
+	font-family: 'Inter', sans-serif;
+	padding: 0.3em 0.4em;
+	opacity: 0.8;
+	border-radius: 3px;
+}
+.mouse-follower:not(.has-border) span{border-top-width: 0px;}
+.mouse-follower:not(.is-visible){
+	display:none;
+}

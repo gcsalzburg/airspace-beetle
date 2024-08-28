@@ -1,0 +1,201 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=Utf-8">
+
+		<title>Network Builder</title>
+
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Inter+Tight:wght@100..900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+		<link rel="stylesheet" href="include/styles.css">
+
+		<!-- Mapbox -->
+		<script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+		<link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+		<script src='include/lib/mapbox-gl-circle.js'></script>
+		<script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+
+	</head>
+
+	<body>
+			<header>
+				<h1>network builder</h1>
+				<nav></nav>
+			</header>
+			<main>
+				<section class="map-container">
+					<div class="map"></div>
+				</section>
+				<section class="config-container">
+					<div class="code-container" data-selected="csv">
+						<nav>
+							<a href="#toggle-code-csv" data-toggle="csv">CSV</a>
+							<a href="#toggle-code-geojson" data-toggle="geojson">GeoJSON</a>
+						</nav>
+						<div class="code">
+							<textarea data-code="csv">51.7695207,0.0853945,The Princess Alexandra Hospital,Hospital
+51.5135562,-0.0499807,Steels Lane Health Centre,Health Centre
+51.5148198,-0.0650534,The Royal London Hospital,Hospital
+51.517496,-0.1000463,Barts Hospital At Home,Hospital
+51.5167424,-0.0583167,Ict Department,Department
+51.5171827,-0.058062,Barts Health Pathology,Pathology Lab
+51.5250734,-0.0421445,Mile End Hospital,Hospital
+51.5584939,-0.011831,Oliver Road Medical Centre,Medical Centre,hub
+51.5778196,0.0032545,Whipps Cross University Hospital,Hospital
+51.5837024,0.027568,Wanstead Hospital,Hospital
+51.578411,0.0248039,Wanstead Place Medical Centre,Medical Centre
+51.5222415,0.0325405,Newham General Hospital,Hospital
+51.4986925,-0.025695,Blt Birth Centre,Birth
+51.5430798,0.0085702,Deanery Road Midwifery Group,Midwife
+51.5110915,0.017334,Appleby Centre,Misc
+51.5018167,0.0562749,North Woolwich Children's Centre,Children's
+51.511472,0.0256886,Freemasons Road Midwifery Centre,Midwife
+51.5803305,-0.0318845,St James Health Centre,Health Centre
+51.5826775,-0.0097845,Comely Bank,Misc
+51.531965,-0.0497284,The London Chest Hospital,Hospital
+51.6201726,-0.0002776,Chingford Hospital,Hospital
+51.5382155,0.0381889,St Stephens Children's Centre,Children's
+51.5391765,0.0442366,Shrewsbury Road Health Centre,Health Centre
+51.517496,-0.1000463,St Bartholomew's Hospital,Hospital
+51.5459528,0.0772424,Loxford Polyclinic,Clinic
+51.6437448,0.0533731,Forest Medical Centre,Medical Centre
+51.5388712,0.079086,North East London Pay Consortium,Misc
+51.5814822,0.070176,Kenwood Gardens Clinic,Clinic
+51.5802748,0.1115243,King George Hospital,Hospital
+51.6242482,0.0324056,Holly House,Misc
+51.5769482,0.1212996,The Grove Redbridge Child Development Centre,Children's
+51.5382697,0.7119588,Blt Southend (Dental),Misc
+51.5790913,-0.3383228,NHS Harrow Hq,Misc
+51.5753935,-0.3201711,Northwick Park Hospital,Hospital
+51.5950054,-0.3428669,Harrow Wheel Chair Services,Misc
+51.5933169,-0.3402937,Harrow 0-19 School Health And Health Visiting Service,Misc
+51.5765769,-0.3700184,Talbot House,Misc
+51.5661223,-0.3666812,Alexandra Avenue Health & Social Care Centre,Misc
+51.5871018,-0.3013796,St Luke's Hospice,Hospice
+51.6030051,-0.3390059,Denham Unit,Misc
+51.5943412,-0.3345192,The Wealdstone Centre,Misc,hub
+51.6010839,-0.3204389,Belmont Health Centre,Health Centre
+51.5770403,-0.2921086,Birchwood Grange Intermediate Care Service,Misc
+51.6056325,-0.3003302,Honeypot Lane Centre,Misc
+51.5638673,-0.2765893,Chalkhill Clinic,Clinic
+51.5428257,-0.2356393,Willesden Health Centre,Health Centre
+51.5427921,-0.2354354,Willesden Centre For Health And Care Clinic,Clinic
+51.530944,-0.2690778,Central Middlesex Hospital,Hospital
+51.541567,-0.2610213,Hillside Primary Care Centre Clinic,Clinic
+51.5329876,-0.1955469,Sure Start (Granville Centre),Misc
+51.5388543,-0.1958278,Kilburn Square Clinic,Clinic
+51.4329249,0.021203,Grove Park School,School
+51.51128,-0.3792752,Southall Broadway Clinic,Clinic
+51.5127801,-0.3809683,Southall North Neighbourhood Offices (The Saluja Clinic),Clinic
+51.5075205,-0.3465216,Ealing Hospital,Hospital
+51.5455948,-0.4516536,Oakland Medical Centre,Medical Centre
+51.5014691,-0.3731663,Martin House,Misc
+51.5051438,-0.3572665,Tempcode,Misc
+51.521717,-0.4234145,Hayes Cottage,Misc
+51.5054934,-0.4192606,Hesa Primary Care Centre,Health Centre
+51.5343125,-0.3888126,Sure Start Northolt,Misc
+51.535798,-0.3934174,Tangmere Gardens Clinic,Clinic
+51.5315749,-0.3762716,Grand Union Village Health Centre,Health Centre,hub
+51.5399724,-0.3166519,Hillview Surgery,GP
+51.5342227,-0.3465303,Greenford Lodge,Misc
+51.529548,-0.3551001,Ravenor Park Clinic,Clinic
+51.5494203,-0.4829036,Fountains Mill Young Peoples Centre,Misc
+51.5116467,-0.3153281,Improving Access To Psychotherapy,Psychiatric
+51.5094181,-0.3273946,Children With Disabilities Pathfinder Trust,Children's
+51.4951142,-0.2988978,Clayponds Hospital,Hospital
+51.5116299,-0.3126703,Ealing Hospital Child Health,Children's
+51.5115109,-0.3142697,Patient Advice Liason Service - Ealing,Misc
+51.389646,1.3868339,Walmer B Clinic,Clinic
+51.6459934,-0.0618161,Lincoln Road Medical Practice,GP
+51.6620497,-0.0848773,St Michael's Hospital,Hospital
+51.6521128,-0.0845064,Gordon Thomas Opticians,Eye
+51.6584675,-0.0879246,White Lodge Medical Practice,GP,hub
+51.6668924,-0.1028125,Chase Farm Hospital,Hospital
+51.674347,-0.0380684,Freezywater Primary Care Centre,Health Centre
+51.6451823,-0.2063112,Underhill Childrens Centre,Children's
+51.6508236,-0.2137361,Barnet Hospital,Hospital
+51.6524601,-0.2054361,Marie Foster Centre,Misc
+51.654495,-0.1969834,Hadley Wood Hospital,Hospital,hub
+51.6870967,-0.1782385,Potter Bar Hospital,Hospital
+51.7012361,-0.2069023,Furzefield Childrens Centre,Children's
+51.6992783,-0.0330241,Cheshunt Community Hospital,Hospital
+51.5500751,-0.3059501,Wembley Centre For Health And Care,Health Centre
+51.6064822,-0.2711481,Edgware Community Hospital,Hospital
+51.6009597,-0.2635946,Barnfield Childrens Centre,Children's
+51.6026931,-0.1532857,Coppetts Wood Childrens Centre,Children's
+51.6054045,-0.1764142,Finchley Memorial Hospital,Hospital
+51.5885243,-0.0581265,Tottenham Hale Kidney & Diabetes Centre,Kidney
+51.633106,-0.0941632,Green Lane Surgery,GP
+51.5939343,-0.108951,Wood Green Community Diagnostic Centre,Misc
+51.6335932,-0.0532288,Enfield Musculoskeletal Community Health Hub,Misc
+51.5377237,-0.1368046,South Camden (Renal) Centro 4,Misc
+51.526498,-0.1391476,South Camden Centre For Health,Health Centre
+51.5447421,-0.1491132,Harmood Children Centre,Children's
+51.5753663,-0.1960569,Dr Adlers Clinic,Clinic
+51.5810319,-0.1977619,Temple Fortune Health Centre,Health Centre
+51.5750843,-0.202471,Ravenscroft Medical Centre,Medical Centre,hub
+51.5801794,-0.1990937,London Jewish Family Centre,Misc
+51.5611488,-0.2051296,Greenfield Medical Centre,Medical Centre
+51.5613921,-0.2052644,Childs Hill Childrens Centre,Children's
+51.5638075,-0.2038876,Childs Hill Clinic,Children's
+51.5607496,-0.178307,Queen Mary's House,Misc
+51.5548586,-0.1716855,The Keats Group Practice,GP
+51.5538237,-0.1661582,Royal Free Hospital,Hospital
+51.5535377,-0.163083,Hampstead Group Practice,GP
+51.5531203,-0.1619459,50 Lawn Road,Misc
+51.5436,-0.1613546,Adelaide Medical Centre,Medical Centre
+51.5869087,-0.215652,Bell Lane Children Centre,Children's
+51.5769227,-0.2329572,Parkfield Children Centre,Children's
+51.5376944,-0.1367894,Highgate Dialysis Unit,Misc
+51.5501234,-0.1377006,Peckwater Centre,Misc
+51.5524848,-0.1549951,Gospel Oak Health Centre,Health Centre
+51.5499013,-0.1963294,West Hampstead Medical Centre,Medical Centre
+51.5452793,-0.1972323,Kilburn Grange Children Centre,Children's
+51.5397686,-0.1879884,Belsize Priory Health Centre,Health Centre,hub
+51.5435005,-0.2001595,Brondesbury Medical Centre,Medical Centre
+51.5315845,-0.1714235,Wellington Hospital,Hospital</textarea>
+							<textarea data-code="geojson">json,json,json</textarea>
+						</div>
+					</div>
+					<div class="feature-options">
+						<div class="drone-range-wrapper">
+							<label for="drone-range">Drone range:</label>
+							<span class="slider">
+								<input type="range" class="drone-range" id="drone-range" name="drone-range" min="1" max="25" step="1" list="drone-range-ticklist" value="5" />
+								<datalist id="drone-range-ticklist">
+									<option value="0"></option>
+									<option label="5" value="5"></option>
+									<option label="10" value="10"></option>
+									<option label="15" value="15"></option>
+									<option label="20" value="20"></option>
+									<option label="25" value="25"></option>
+								 </datalist>
+							</span>
+							<span class="value">5 km</span>
+						</div>
+						<div class="route-mode-wrapper">
+							<label for="mode">Mode:</label>
+							<select name="mode" id="mode">
+								<option value="hub-spoke">Hub & spoke</option>
+								<option value="multi-hop">Multi-hop</option>
+							</select>
+						</div>
+						<div class="type-colour-wrapper">
+							<label for="type-colour">Colour by type:</label>
+							<input type="checkbox" id="type-colour" name="type-colour">
+							<div class="type-colours"></div>
+						</div>
+						
+					</div>
+					<div class="style-options">
+
+					</div>
+				</section>
+			</main>
+		</main>
+		<script src="include/scripts.js" type="module"></script>
+	</body>
+</html>
