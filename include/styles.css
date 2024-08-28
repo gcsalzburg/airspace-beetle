@@ -49,8 +49,11 @@ main{
 }
 
 .map-container{
-	width: 70%;
+	width: 75%;
 	flex-shrink: 0;
+}
+.expand-config-container .map-container{
+	width: 40%;
 }
 .config-container{
 	padding-left: 1em;
@@ -123,16 +126,15 @@ h1{
 	font-size: 0.9em;
 	border-top-left-radius: var(--border-radius);
 	border-top-right-radius: var(--border-radius);
-	text-transform: lowercase;
 }
 .code-container nav a:hover{
 	background: var(--color-code-panel);
 }
 
-.code-container[data-selected="csv"] [data-toggle="csv"],
-.code-container[data-selected="geojson"] [data-toggle="geojson"]{
+.code-container [href="#imported-data"]{
 	background: var(--color-code-panel);
 	font-weight: 600;
+	white-space: nowrap;
 }
 
 .code{
@@ -157,20 +159,38 @@ h1{
 	position: absolute;
 	resize: none;
 	border: none;
+	white-space: pre;
+	overflow-wrap: normal;
+	overflow-x: scroll;
 }
 .code > textarea:focus{
 	outline: none;
 }
-.code-container:focus-within .code,
-.code-container:focus-within[data-selected="csv"] [data-toggle="csv"],
-.code-container:focus-within[data-selected="geojson"] [data-toggle="geojson"]{
+
+.code-container.is-editing .code,
+.code-container.is-editing [href="#imported-data"]{
 	background: var(--color-positive);
 }
 
-
-.code-container[data-selected="csv"] [data-code="geojson"],
-.code-container[data-selected="geojson"] [data-code="csv"]{
-	display: none;
+.mini-buttons{
+	flex-grow: 1;
+	display: flex;
+   justify-content: flex-end;
+}
+.code-container nav .mini-buttons a{
+	background: var(--color-code-panel);
+	margin-bottom: 0.1em;
+	padding-bottom: 0.2em;
+	border-radius: var(--border-radius);
+}
+.code-container nav .mini-buttons a:hover{
+	background: var(--color-positive);
+}
+a[href='#toggle-width']:after{
+	content: '⬅';
+}
+.expand-config-container [href='#toggle-width']:after{
+	content: '➡';
 }
 
 /* *********************************************************** */

@@ -264,10 +264,10 @@ export default class{
 
 	// **********************************************************
 	// Sync functions
-	// These keep the CSV, map display and geoJSON in sync
+	// These keep the CSV and map display in sync
 
 	// Take an updated CSV from the input box, and convert it to geoJSON and render
-	// Expected format: lat,lng,placename,type,dzType
+	// Expected format: source,lat,lng,destination,lat,lng,metadata1,metadata2,metadata3,etc..
 	csvIsUpdated = (csv) => {
 
 		csv = csv.trim()
@@ -281,40 +281,59 @@ export default class{
 		// Convert to geoJSON
 		for(let row of csv.split('\n')){
 			const parts = row.split(',')
-			if(parts.length >= 2){
-				const placename = (parts.length > 2) ? parts[2] : ''
-				const type = (parts.length > 3) ? parts[3] : ''
-				const dzType = (parts.length > 4) ? parts[4] : ''
-				const newLocation = {
-					type: 'Feature',
-					geometry: {
-						type: 'Point',
-						coordinates: [parts[1], parts[0]]
-					},
-					properties: {
-						placename: placename,
-						type: type,
-						dzType: dzType
-					}
-				}
-				newGeoJSON.features.push(newLocation)
+
+			// Few basic data integrity checks
+			if(parts.length < 6){
+				console.warn(`Naughty CSV row (too short): ${row}`)
+				continue
 			}
+			if(isNaN(parts[1]) || isNaN(parts[2]) || isNaN(parts[4]) || isNaN(parts[5])){
+				console.warn(`Naughty CSV row (NaN coords): ${row}`)
+				continue
+			}
+
+			// /////////////////////////
+			
+			// TODO TODO
+			// 1. Save each row as a new route
+			// 2. Add metdata on the name of the source and destination for the route
+			// 3. Add the marker to a list of unique locations
+			// 4. Debug print somewhere the total number of unique locations, perhaps ranked by the number of locations each serves
+			// 5. Hover on a location to highlight all routes that go to that location
+			// 6. Hover on a route to print the distance, highlight the start and end points, and maybe some of the metadata associated with it too?
+			// 7. When hovering a route, add a little label tag underneath the start/end locations with their names on them?
+
+			// /////////////////////////
+
+			const newLocation = {
+				type: 'Feature',
+				geometry: {
+					type: 'Point',
+					coordinates: [parts[2], parts[1]]
+				},
+				properties: {
+					placename: parts[0],
+					type: '',
+					dzType: ''
+				}
+			}
+			for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
+				newLocation.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
+			}
+			newGeoJSON.features.push(newLocation)
 		}
 
 		// Populate types
 		const unique_types = newGeoJSON.features.map(feature => feature.properties.type).filter(((value, index, array) => array.indexOf(value) === index))
-		this.generateTypes(unique_types)
+		//this.generateTypes(unique_types)
 
 		// Save to mapData
 		this.mapData.nodes = newGeoJSON
 
-		// Convert to GeoJSON for GeoJSON input box
-		this.options.dom.codeGeoJSON.value = JSON.stringify(this.mapData.nodes, null, 3)
-
 		// Add the nodes as markers
 		this.reRender()
 	}
-
+/*
 	generateTypes = (type_list) => {
 		this.featureOptions.types = type_list
 		this.options.dom.typeColours.innerHTML = ''
@@ -322,7 +341,7 @@ export default class{
 			this.options.dom.typeColours.insertAdjacentHTML('beforeend',`<span style="--color: hsl(${type_list.indexOf(type)*29}, 72%, 53%)">${type}</span>`)
 			console.log(`%c${type}`, `background: hsl(${type_list.indexOf(type)*29}, 72%, 53%)`);
 		}
-	}
+	}*/
 
 	mapIsUpdated = () => {
 		// TODO
@@ -369,8 +388,8 @@ export default class{
 	// **********************************************************
 	// Routing mode handling
 
-	setRouteType = (type) => {
+/*	setRouteType = (type) => {
 		this.featureOptions.mode = type
 		this.reRender({markers: false})
-	}
+	}*/
 }

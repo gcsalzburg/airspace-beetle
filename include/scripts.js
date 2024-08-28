@@ -22,14 +22,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 		dom: {
 			mapbox: document.querySelector('.map'),
 			codeCSV: document.querySelector('[data-code=csv]'),
-			codeGeoJSON: document.querySelector('[data-code=geojson]'),
-			typeColours: document.querySelector('.type-colours')
+		//	typeColours: document.querySelector('.type-colours')
 		}		
 	})
 
 	// **********************************************************
 	// Handle selects,sliders,checkboxes etc
-
+/*
 	const droneRangeValue = document.querySelector('.drone-range-wrapper .value')
 
 	document.querySelector('.drone-range-wrapper input[type="range"]').addEventListener("input", (e) => {
@@ -44,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	document.querySelector('.type-colour-wrapper input').addEventListener("input", (e) => {
 		document.body.dataset.showTypeColours = e.target.checked
 	})
-
+*/
 	// **********************************************************
 	// Handle code input textboxes
 
@@ -52,9 +51,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const newCSV = e.target.value.replace(/\t/gi,',')
 		e.target.value = newCSV // Substitute tabs for commas when pasting in, to help!
 		myNetwork.csvIsUpdated(newCSV)
-	})
-	document.querySelector('[data-code=geojson]').addEventListener("input", (e) => {
-		// TODO
 	})
 
 	// **********************************************************
@@ -70,17 +66,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 		switch(hash){
 
-			case 'toggle-code-csv':
-				document.querySelector('.code-container').dataset.selected = 'csv'
-				document.querySelector('[data-code=csv]').focus()
+			case 'toggle-width':
+				document.body.classList.toggle('expand-config-container')
 				break
 
-			case 'toggle-code-geojson':
-				document.querySelector('.code-container').dataset.selected = 'geojson'
-				document.querySelector('[data-code=geojson]').focus()
+			case 'imported-data':
+				document.querySelector('textarea').focus()
 				break
 		}
 	}))
+
+	document.querySelector('textarea').addEventListener('focus', (e) => {
+		document.querySelector('.code-container').classList.toggle('is-editing', true)
+	});
+	document.querySelector('textarea').addEventListener('blur', (e) => {
+		document.querySelector('.code-container').classList.toggle('is-editing', false)
+	});
 
 	const exportGeoJSON = (geojson) => {
 
