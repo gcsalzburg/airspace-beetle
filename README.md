@@ -1,15 +1,13 @@
 # Airspace Beetle
 
-## Resources
+## Todo
 
-
-## OLD TODO
-
-+ Error checking when parsing CSV
-+ Drag a point around to find a good hub location
-+ LocalStorage when re-loading page
-+ Prioritise hover on markers over lines
-+ Show hub & DZ count on map
-
-+ Bug - when zoomed in, edit hub and zoom out, the other lines disappear
-+ Show how many hubs, how many DZs, how many DZs with no link to them and what % of sites are not currently served
++ Highlight the routes from a hub when you hover over it in the list
++ Add line numbers to the imported data
++ Add an error message where imported data rows are skipped and reasons why (e.g. "skipping line 6, incorrect XX")
++ Add export to KML link
++ Add a date timeline
++ Add list of how many routes there are (and what length they are)
++ Add the slider for route length cutoff back in
++ Move initial example data to separate file
++ Use localStorage to save data and any settings
