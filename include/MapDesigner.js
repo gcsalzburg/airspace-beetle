@@ -3,7 +3,7 @@ export default class{
 
 	// geoJSON for map display
 	mapData = {
-		nodes: {
+		locations: {
 			type: "FeatureCollection",
 			features: []					
 		},
@@ -88,21 +88,16 @@ export default class{
 				'line-width': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
-					6,
+					7,
 					4
 				],
 				'line-blur': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
-					2,
-					8
+					0,
+					3
 				],
-				'line-opacity': [
-					'case', 
-					['boolean', ['feature-state', 'withinDroneRange'], false],
-					1,
-					0
-				]
+				'line-opacity': 1
 			}
 		})
 
@@ -112,7 +107,7 @@ export default class{
 			if (e.features.length > 0) {
 
 				for(let feature of e.features){
-					if(feature.properties.distance < this.featureOptions.droneRange){
+					//if(feature.properties.distance < this.featureOptions.droneRange){
 						// Unhighlight current hovered one
 						if (this.hoveredRoute !== null) {
 							this.map.setFeatureState(
@@ -128,8 +123,13 @@ export default class{
 							{hover: true}
 						)
 						this.options.follower.set(`${Math.round(feature.properties.distance*10)/10} km`, {style: 'route'})
+
+						// Add location labels
+						document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+						document.querySelector(`.marker[data-name="${feature.properties.source}"]`).classList.add('show-label')
+						document.querySelector(`.marker[data-name="${feature.properties.destination}"]`).classList.add('show-label')
 						break
-					}
+					//}
 				}
 			}
 		})
@@ -143,6 +143,9 @@ export default class{
 			}
 			this.hoveredRoute = null
 			this.options.follower.clear()
+
+			// Clear location labels too
+			document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
 		})
 	}
 
@@ -164,11 +167,9 @@ export default class{
 		}
 		
 		if(_options.routes){
-			// Empty existing routes
-			this.mapData.routes.features = []
-	
-			// Regenerate routes
-			this.generateRoutes()
+			// Reapply the new routes
+			this.map.on('sourcedata', this.onSourceData);
+			this.map.getSource('routes').setData(this.mapData.routes)
 		}
 	}
 
@@ -180,10 +181,12 @@ export default class{
 		}
 
 		// Add markers again
-		for (const feature of this.mapData.nodes.features) {
+		for (const feature of this.mapData.locations.features) {
 			// create a HTML element for each feature
 			const el = document.createElement('div')
 			el.className = 'marker'
+			el.dataset.name = feature.properties.name
+			el.dataset.routes = feature.properties.routes
 			el.classList.toggle('is_hub', feature.properties.dzType == 'hub')
 			if(feature.properties.type){
 				el.style = `--type-colour: hsl(${this.featureOptions.types.indexOf(feature.properties.type)*29}, 70%, 50%)`
@@ -192,73 +195,20 @@ export default class{
 			this.mapData.markers.push(newMarker)
 
 			// Add marker hover
-			newMarker.getElement().addEventListener('mousemove', (e) => {
-				this.options.follower.set(`${feature.properties.placename}<br>(${feature.properties.type})`)
+			const newElem = newMarker.getElement()
+			newElem.addEventListener('mouseenter', (e) => {
+				newElem.classList.add('show-label')
 			})
-			newMarker.getElement().addEventListener('mouseleave', (e) => {
-				this.options.follower.clear()
-			})
-			newMarker.getElement().addEventListener('click', (e) => {
-				this.toggleMarkerHub(feature, newMarker)
+			newElem.addEventListener('mouseleave', (e) => {
+				newElem.classList.remove('show-label')
 			})
 		}
-	}
-
-	toggleMarkerHub = (feature, marker) => {
-		if(feature.properties.dzType == 'hub'){
-			feature.properties.dzType = ''
-		}else{
-			feature.properties.dzType = 'hub'
-		}
-		marker.getElement().classList.toggle('is_hub', feature.properties.dzType == 'hub')
-		this.reRender({markers: false})
-	}
-
-	generateRoutes = async () => {
-
-		let start_points
-		const end_points = this.mapData.nodes.features
-
-		// Set start points based on link type
-		if(this.featureOptions.mode == 'hub-spoke'){
-			start_points = this.mapData.nodes.features.filter(feature => feature.properties.dzType == 'hub')
-		}else{
-			start_points = this.mapData.nodes.features.slice(0, -1) // not last item, otherwise we duplicate some links
-		}
-
-		for (let start_index=0; start_index<start_points.length; start_index++) {
-			for (let end_index=start_index+1; end_index<end_points.length; end_index++) {
-				const distance = turf.distance(start_points[start_index], end_points[end_index], {units: 'kilometers'})
-				this.mapData.routes.features.push({
-					type: "Feature",
-					properties: {
-						id: Math.random()*10000,
-						from: '',
-						end: '',
-						distance: distance,
-						withinDroneRange: false
-					},
-					geometry: {
-						type: 'LineString',
-						coordinates: [
-							start_points[start_index].geometry.coordinates,
-							end_points[end_index].geometry.coordinates,
-						]
-					}
-				})
-			}
-		}
-
-		// listener for sourcedata event.
-		this.map.on('sourcedata', this.onSourceData);
-		this.map.getSource('routes').setData(this.mapData.routes)
 	}
 
 	// Helper function to do first call to set drone range once the route data has been loaded onto the map
 	onSourceData = (e) => {
 		if (e.isSourceLoaded && e.sourceDataType != 'metadata'){ // I worked out these parameter checks by inspection and guesswork, may not be stable!
 			this.map.off('sourcedata', this.onSourceData);
-			this.setDroneRange(this.featureOptions.droneRange)
 		}
 	}
 
@@ -292,47 +242,75 @@ export default class{
 				continue
 			}
 
+			// Save coords
+			const source_coords = [parts[2], parts[1]]
+			const destination_coords = [parts[5], parts[4]]
+
+			// 1. Generate a route for this line
+			const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
+			const newRoute = {
+				type: "Feature",
+				properties: {
+					id: Math.random()*10000,
+					source: parts[0],
+					destination: parts[3],
+					distance: distance
+				},
+				geometry: {
+					type: 'LineString',
+					coordinates: [
+						source_coords,
+						destination_coords,
+					]
+				}
+			}
+			for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
+				// TODO make this more intelligent, with an axis to roll out the places over time
+				newRoute.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
+			}
+			this.mapData.routes.features.push(newRoute)
+
+			// 2. Save the location if it is a unique location
+			this.addLocation(parts[0], source_coords)
+			this.addLocation(parts[3], destination_coords)
+
 			// /////////////////////////
-			
+
 			// TODO TODO
-			// 1. Save each row as a new route
-			// 2. Add metdata on the name of the source and destination for the route
-			// 3. Add the marker to a list of unique locations
 			// 4. Debug print somewhere the total number of unique locations, perhaps ranked by the number of locations each serves
 			// 5. Hover on a location to highlight all routes that go to that location
 			// 6. Hover on a route to print the distance, highlight the start and end points, and maybe some of the metadata associated with it too?
 			// 7. When hovering a route, add a little label tag underneath the start/end locations with their names on them?
 
 			// /////////////////////////
-
-			const newLocation = {
-				type: 'Feature',
-				geometry: {
-					type: 'Point',
-					coordinates: [parts[2], parts[1]]
-				},
-				properties: {
-					placename: parts[0],
-					type: '',
-					dzType: ''
-				}
-			}
-			for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
-				newLocation.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
-			}
-			newGeoJSON.features.push(newLocation)
 		}
-
-		// Populate types
-		const unique_types = newGeoJSON.features.map(feature => feature.properties.type).filter(((value, index, array) => array.indexOf(value) === index))
-		//this.generateTypes(unique_types)
-
-		// Save to mapData
-		this.mapData.nodes = newGeoJSON
 
 		// Add the nodes as markers
 		this.reRender()
 	}
+
+	addLocation = (name, coords) => {
+		const existingLocation = this.findObjectByProperty(this.mapData.locations.features, "properties.name", name)
+		if(!existingLocation){
+			this.mapData.locations.features.push({
+				type: 'Feature',
+				geometry: {
+					type: 'Point',
+					coordinates: coords
+				},
+				properties: {
+					name: name,
+					type: '',
+					dzType: '',
+					numRoutes: 1
+					// TODO: Add a property called "earliest date" or something
+				}
+			})
+		}else{
+			existingLocation.properties.numRoutes++
+		}
+	}
+
 /*
 	generateTypes = (type_list) => {
 		this.featureOptions.types = type_list
@@ -343,17 +321,9 @@ export default class{
 		}
 	}*/
 
-	mapIsUpdated = () => {
-		// TODO
-	}
-
-	geoJSONIsUpdated = () => {
-		// TODO
-	}
-
 	// **********************************************************
 	// Drone range handling
-
+/*
 	setDroneRange = (range) => {
 		// Save the range
 		this.featureOptions.droneRange = parseInt(range)
@@ -383,13 +353,27 @@ export default class{
 				{withinDroneRange: true}
 			)
 		})
-	}
+	}*/
 
 	// **********************************************************
-	// Routing mode handling
+	// Generic helper functions
 
-/*	setRouteType = (type) => {
-		this.featureOptions.mode = type
-		this.reRender({markers: false})
-	}*/
+	findObjectByProperty = (array, propertyPath, value) => {
+		for (let i = 0; i < array.length; i++) {
+			let obj = array[i];
+			const propertyParts = propertyPath.split('.')
+			for (let j = 0; j < propertyParts.length; j++) {
+				if (!obj) {
+				break // If the property path is invalid, break the loop
+				}
+				obj = obj[propertyParts[j]];
+			}
+			if (obj === value) {
+				return array[i]
+			}
+		}
+		return null
+	}
+
+
 }
