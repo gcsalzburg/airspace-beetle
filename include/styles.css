@@ -152,8 +152,9 @@ h1{
 
 .code-container [href="#imported-data"]{
 	background: var(--color-code-panel);
-	font-weight: 600;
+	font-weight: normal;
 	white-space: nowrap;
+	font-size: 1.1em;
 }
 
 .code{
@@ -201,6 +202,8 @@ h1{
 	margin-bottom: 0.1em;
 	padding-bottom: 0.2em;
 	border-radius: var(--border-radius);
+	display: flex;
+	align-items: center;
 }
 .code-container nav .mini-buttons a:hover{
 	background: var(--color-positive);
@@ -210,6 +213,34 @@ a[href='#toggle-width']:after{
 }
 .expand-config-container [href='#toggle-width']:after{
 	content: '➡';
+}
+
+/* *********************************************************** */
+/* Map stats                                                   */
+/* *********************************************************** */
+h3{
+	font-weight: normal;
+	border-bottom: 2px solid var(--color-code-panel);
+	padding-bottom: 4px;
+	margin-bottom: 8px;
+	font-size: 1.2em;
+}
+.locations-list > div{
+	font-size: 0.9em;
+	margin-bottom: 0.2em;
+	cursor: default;
+}
+.locations-list > div:hover{
+	background: color-mix(in srgb, var(--color-positive) 15%, transparent);
+}
+.locations-list .num{
+	background: color-mix(in srgb, var(--color-primary) 70%, transparent);
+	display: inline-block;
+	padding: 0 0.3em;
+	border-radius: 5px;
+	color: white;
+	font-weight: bold;
+	font-size: 0.9em;
 }
 
 /* *********************************************************** */

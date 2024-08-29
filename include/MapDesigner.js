@@ -147,30 +147,46 @@ export default class{
 			// Clear location labels too
 			document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
 		})
+
+		// Add hover effects to list of locations on side
+		this.options.dom.locationsList.addEventListener('mousemove', (e) => {
+			const location = e.target.closest('.location')
+			if(location){
+				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+				document.querySelector(`.marker[data-name="${location.dataset.name}"]`).classList.add('show-label')
+			}else{
+				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+			}
+		})
+		
+		//insertAdjacentHTML('beforeend',`<div data-name="${
 	}
 
-	reRender = (options) => {
+	regenerateMap = (options) => {
 
-		const _options = {...{
-			markers: true,
-			routes: true
-		}, ...options}
-
-		if(_options.markers){
-			// Clear old markers
-			for(let marker of this.mapData.markers){
-				marker.remove()
-			}
-	
-			// Add new markers
-			this.addMarkers()
+		// Clear old markers
+		for(let marker of this.mapData.markers){
+			marker.remove()
 		}
+		// Add new markers
+		this.addMarkers()
 		
-		if(_options.routes){
-			// Reapply the new routes
-			this.map.on('sourcedata', this.onSourceData);
-			this.map.getSource('routes').setData(this.mapData.routes)
-		}
+		// Reapply the new routes
+		this.map.on('sourcedata', this.onSourceData);
+		this.map.getSource('routes').setData(this.mapData.routes)
+
+		// Display list of all routes
+		this.createLocationsList()
+	}
+
+	createLocationsList = () => {
+		this.options.dom.locationsList.innerHTML = ""
+		const locationsList = this.mapData.locations.features.map(location => ({name: location.properties.name, numRoutes: location.properties.numRoutes}))
+		locationsList.sort((a,b) => a.numRoutes - b.numRoutes).reverse()
+		locationsList.forEach(item => {
+			console.log(this.options.dom)
+			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${item.name}"><span class="num">${item.numRoutes}</span> ${item.name}</div>`)
+		})
 	}
 
 	// Add markers from geoJSON
@@ -286,7 +302,7 @@ export default class{
 		}
 
 		// Add the nodes as markers
-		this.reRender()
+		this.regenerateMap()
 	}
 
 	addLocation = (name, coords) => {

@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		dom: {
 			mapbox: document.querySelector('.map'),
 			codeCSV: document.querySelector('[data-code=csv]'),
+			locationsList: document.querySelector('.locations-list')
 		//	typeColours: document.querySelector('.type-colours')
 		}		
 	})
