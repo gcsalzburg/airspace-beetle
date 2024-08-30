@@ -8,6 +8,7 @@
 	--color-code-panel: hsl(0, 0%, 87%);
 	--color-positive: rgb(133, 203, 51);
 	--color-negative: rgb(255, 101, 32);
+	--color-warning: rgb(255, 210, 32);
 
 	--color-page-bg: #f2f2f2;
 	--color-body-text: rgb(0, 0, 0);
@@ -159,8 +160,7 @@ h1{
 
 .code{
 	background: var(--color-code-panel);
-	width: 100%;
-	min-height: 400px;
+	height: 400px;
 	font-family: "IBM Plex Mono", monospace;
 	font-size: 0.9em;
 	font-weight:400;
@@ -168,23 +168,67 @@ h1{
 	border-radius: var(--border-radius);
 	border-top-left-radius: 0px;
 	position: relative;
+
+	--margin: 3px;
+	padding: var(--margin);
+	overflow: hidden;
 }
 
-.code > textarea{
-	--margin: 2px;
+.editor{
+	display: inline-flex;
+	font-family: monospace;
+	line-height: 21px;
+	height: 100%;
+	overflow-y: auto;
+	overflow-x: auto;
+	width: 100%;
+	border-radius: calc(var(--border-radius) - var(--margin));
+}
+
+.editor textarea{
 	background: white;
 	padding: 0.3em;
-	border-radius: calc(var(--border-radius) - var(--margin));
-	inset: var(--margin);
-	position: absolute;
 	resize: none;
 	border: none;
 	white-space: pre;
 	overflow-wrap: normal;
-	overflow-x: scroll;
-}
-.code > textarea:focus{
+
+	height: 9999px;
+	line-height: 21px;
+	overflow-y: hidden;
+	padding: 0;
+	border: 0;
 	outline: none;
+	resize: none;
+	width: 100%;
+}
+.editor textarea:focus{
+	outline: none;
+}
+
+.editor .line-numbers {
+	width: 23px;
+	text-align: right;
+	height: 9999px;
+	background: white;
+	padding: 0 8px 0 2px;
+}
+
+.editor .line-numbers span {
+	counter-increment:  linenumber;
+}
+
+.editor .line-numbers span::before {
+	content: counter(linenumber);
+	display: block;
+	color: #506882;
+	padding-right: 2px;
+}
+.editor .line-numbers span.has-error::before{
+	background: var(--color-negative);
+	font-weight: 600;
+	color: white;
+	border-radius: 3px;
 }
 
 .code-container.is-editing .code,
@@ -216,6 +260,34 @@ a[href='#toggle-width']:after{
 }
 
 /* *********************************************************** */
+/* Import warning                                              */
+/* *********************************************************** */
+
+.import-warning{
+	background: color-mix(in srgb, var(--color-negative) 15%, transparent);
+	border: 1px solid var(--color-negative);
+	border-radius: 5px;
+	font-size: 0.9em;
+	padding: 0.4em 0.8em 0.4em 2.5em;
+	margin-top: 1em;
+	position: relative;
+}
+.import-warning::before{
+	content:"⚠️";
+	font-variant-emoji: emoji;
+	display:block;
+	position: absolute;
+	left: 0.5em;
+	top: 0.2em;
+}
+.import-warning .num-rows{
+	font-weight: 600;
+}
+.import-warning:not(.show){
+	display:none;
+}
+
+/* *********************************************************** */
 /* Map stats                                                   */
 /* *********************************************************** */
 h3{
@@ -225,13 +297,11 @@ h3{
 	margin-bottom: 8px;
 	font-size: 1.2em;
 }
-.locations-list > div{
+.locations-list .location{
 	font-size: 0.9em;
 	margin-bottom: 0.2em;
 	cursor: default;
-}
-.locations-list > div:hover{
-	background: color-mix(in srgb, var(--color-positive) 15%, transparent);
+	font-weight: 300;
 }
 .locations-list .num{
 	background: color-mix(in srgb, var(--color-primary) 70%, transparent);
@@ -241,6 +311,14 @@ h3{
 	color: white;
 	font-weight: bold;
 	font-size: 0.9em;
+}
+.locations-list .location:hover .num{
+	background: var(--color-positive);
+}
+
+.routes-length{
+	font-weight: 300;
+	font-size: 0.8em;
 }
 
 /* *********************************************************** */
@@ -269,6 +347,7 @@ h3{
 	width: 140px;
 	font-size: 0.7em;
 	margin-top: 0.3em;
+	display: none;
 }
 
 .drone-range-wrapper .drone-range{

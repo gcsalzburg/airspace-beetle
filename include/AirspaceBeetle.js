@@ -20,9 +20,7 @@ export default class{
 
 	// Feature options
 	featureOptions = {
-		droneRange: 5,
-		mode: 'hub-spoke',
-		types: []
+		droneRange: 5
 	}
  
 	// Default options are below
@@ -64,8 +62,8 @@ export default class{
 
 		// Once the map has loaded
 		this.map.on('load', async () => {
-			this.initMapLayers()											// Prep mapbox layers
-			this.csvIsUpdated(this.options.dom.codeCSV.value)	// Trigger initial builds
+			this.initMapLayers()				// Prep mapbox layers
+			this.options.onReady()			// Call the ready function to load in first data
 		})
 	}
 
@@ -97,7 +95,12 @@ export default class{
 					0,
 					3
 				],
-				'line-opacity': 1
+				'line-opacity': [
+					'case', 
+					['boolean', ['feature-state', 'withinDroneRange'], false],
+					1,
+					0
+				]
 			}
 		})
 
@@ -158,8 +161,6 @@ export default class{
 				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
 			}
 		})
-		
-		//insertAdjacentHTML('beforeend',`<div data-name="${
 	}
 
 	regenerateMap = (options) => {
@@ -175,8 +176,23 @@ export default class{
 		this.map.on('sourcedata', this.onSourceData);
 		this.map.getSource('routes').setData(this.mapData.routes)
 
-		// Display list of all routes
+		// Display list of all locations, routes etc
+		this.createRoutesData()
 		this.createLocationsList()
+	}
+
+	createRoutesData = () => {
+		this.options.dom.routesData.querySelector('.num-routes').innerHTML = this.mapData.routes.features.length
+
+		// Get min/max route length
+		const maxRouteLength = this.mapData.routes.features.reduce((max, feature) => Math.max(max, feature.properties.distance), -Infinity)
+		const minRouteLength = this.mapData.routes.features.reduce((min, feature) => Math.min(min, feature.properties.distance), Infinity)
+		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(minRouteLength*10)/10} - ${Math.round(maxRouteLength*10)/10} km)`
+
+		// Set bounds of range slider
+		const sliderMax = Math.ceil(maxRouteLength/5)*5
+		console.log(sliderMax)
+		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
 	}
 
 	createLocationsList = () => {
@@ -184,7 +200,6 @@ export default class{
 		const locationsList = this.mapData.locations.features.map(location => ({name: location.properties.name, numRoutes: location.properties.numRoutes}))
 		locationsList.sort((a,b) => a.numRoutes - b.numRoutes).reverse()
 		locationsList.forEach(item => {
-			console.log(this.options.dom)
 			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${item.name}"><span class="num">${item.numRoutes}</span> ${item.name}</div>`)
 		})
 	}
@@ -236,25 +251,33 @@ export default class{
 	// Expected format: source,lat,lng,destination,lat,lng,metadata1,metadata2,metadata3,etc..
 	csvIsUpdated = (csv) => {
 
+		// Trim incoming CSV
 		csv = csv.trim()
 
-		// Placeholder for new geoJSON
-		const newGeoJSON = {
-			type: 'FeatureCollection',
-			features: []
+		// Clear existing map content
+		this.mapData.routes.features = []
+		this.mapData.locations.features = []
+
+		// Clear errors
+		if(this.options.dom.lineNumbers.children.length > 0){
+			this.options.dom.lineNumbers.querySelectorAll(`span`).forEach(span => span.classList.remove('has-error'))
 		}
+		this.options.dom.importWarning.classList.remove('show')
+		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = '0'
 
 		// Convert to geoJSON
+		let rowNum = 0
 		for(let row of csv.split('\n')){
+			rowNum++
 			const parts = row.split(',')
 
 			// Few basic data integrity checks
 			if(parts.length < 6){
-				console.warn(`Naughty CSV row (too short): ${row}`)
+				this.addImportError(rowNum, 'Row too short', row)
 				continue
 			}
 			if(isNaN(parts[1]) || isNaN(parts[2]) || isNaN(parts[4]) || isNaN(parts[5])){
-				console.warn(`Naughty CSV row (NaN coords): ${row}`)
+				this.addImportError(rowNum, 'Coords not a number', row)
 				continue
 			}
 
@@ -290,21 +313,22 @@ export default class{
 			this.addLocation(parts[0], source_coords)
 			this.addLocation(parts[3], destination_coords)
 
-			// /////////////////////////
-
-			// TODO TODO
-			// 4. Debug print somewhere the total number of unique locations, perhaps ranked by the number of locations each serves
-			// 5. Hover on a location to highlight all routes that go to that location
-			// 6. Hover on a route to print the distance, highlight the start and end points, and maybe some of the metadata associated with it too?
-			// 7. When hovering a route, add a little label tag underneath the start/end locations with their names on them?
-
-			// /////////////////////////
 		}
 
 		// Add the nodes as markers
 		this.regenerateMap()
 	}
 
+	// Render a warning underneath that an error occurred
+	addImportError = (rowNum, errorMessage, rowContents) => {
+		this.options.dom.lineNumbers.querySelector(`:nth-child(${rowNum})`).classList.add('has-error')
+
+		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = parseInt(this.options.dom.importWarning.querySelector('.num-rows').innerHTML)+1
+		this.options.dom.importWarning.classList.add('show')
+		console.warn(rowNum, errorMessage, rowContents)
+	}
+
+	// Add a location to the list
 	addLocation = (name, coords) => {
 		const existingLocation = this.findObjectByProperty(this.mapData.locations.features, "properties.name", name)
 		if(!existingLocation){
@@ -339,11 +363,10 @@ export default class{
 
 	// **********************************************************
 	// Drone range handling
-/*
+
 	setDroneRange = (range) => {
 		// Save the range
 		this.featureOptions.droneRange = parseInt(range)
-		console.log(`Drone range: ${this.featureOptions.droneRange}km`)
 
 		// Clear all routes as being within drone range or not
 		for(let feature of this.mapData.routes.features){
@@ -369,7 +392,7 @@ export default class{
 				{withinDroneRange: true}
 			)
 		})
-	}*/
+	}
 
 	// **********************************************************
 	// Generic helper functions
