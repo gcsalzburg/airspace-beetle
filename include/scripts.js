@@ -2,6 +2,7 @@
 
 import Follower from './Follower.js'
 import AirspaceBeetle from './AirspaceBeetle.js'
+import GeojsonToKml from './GeojsonToKml.js'
 
 document.addEventListener("DOMContentLoaded", async () => {
 
@@ -118,6 +119,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 			case 'imported-data':
 				document.querySelector('textarea').focus()
+				break
+
+			case 'export-kml':
+				const converter = new GeojsonToKml()
+				const kmlString = converter.convert(myNetwork.getGeojson())
+
+				const blob = new Blob([kmlString], { type: 'text/plain' })
+				const url = URL.createObjectURL(blob)
+				const a = document.createElement('a') 
+				a.href = url
+				a.download = `airspace-beetle-${Date.now()}.kml`
+				a.click()
+				URL.revokeObjectURL(url)
 				break
 		}
 	}))

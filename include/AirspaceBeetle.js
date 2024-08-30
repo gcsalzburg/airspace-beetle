@@ -48,6 +48,16 @@ export default class{
 	}
 
 	// **********************************************************
+	// Getters
+
+	getGeojson = () => {
+		return {
+			type: "FeatureCollection",
+			features: [...this.mapData.routes.features, ...this.mapData.locations.features]
+		}
+	}
+
+	// **********************************************************
 	// Start the Airspace Beetle
 	initMap = async () => {
 
@@ -217,10 +227,6 @@ export default class{
 			el.className = 'marker'
 			el.dataset.name = feature.properties.name
 			el.dataset.routes = feature.properties.routes
-			el.classList.toggle('is_hub', feature.properties.dzType == 'hub')
-			if(feature.properties.type){
-				el.style = `--type-colour: hsl(${this.featureOptions.types.indexOf(feature.properties.type)*29}, 70%, 50%)`
-			}
 			const newMarker = new mapboxgl.Marker(el).setLngLat(feature.geometry.coordinates).addTo(this.map)
 			this.mapData.markers.push(newMarker)
 
@@ -343,8 +349,6 @@ export default class{
 				},
 				properties: {
 					name: name,
-					type: '',
-					dzType: '',
 					numRoutes: 1
 					// TODO: Add a property called "earliest date" or something
 				}
@@ -368,7 +372,6 @@ export default class{
 				{withinDroneRange: false}
 			)
 		}
-		console.log(range)
 		// Filter routes by which ones are within range
 		const validRoutes = this.map.querySourceFeatures('routes', {
 			sourceLayer: 'routes',
