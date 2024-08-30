@@ -48,7 +48,7 @@ export default class{
 	}
 
 	// **********************************************************
-	// Start the Sentry
+	// Start the Airspace Beetle
 	initMap = async () => {
 
 		// Load the Mapbox map
@@ -110,7 +110,7 @@ export default class{
 			if (e.features.length > 0) {
 
 				for(let feature of e.features){
-					//if(feature.properties.distance < this.featureOptions.droneRange){
+					if(feature.properties.distance < this.featureOptions.droneRange){
 						// Unhighlight current hovered one
 						if (this.hoveredRoute !== null) {
 							this.map.setFeatureState(
@@ -132,7 +132,7 @@ export default class{
 						document.querySelector(`.marker[data-name="${feature.properties.source}"]`).classList.add('show-label')
 						document.querySelector(`.marker[data-name="${feature.properties.destination}"]`).classList.add('show-label')
 						break
-					//}
+					}
 				}
 			}
 		})
@@ -191,7 +191,6 @@ export default class{
 
 		// Set bounds of range slider
 		const sliderMax = Math.ceil(maxRouteLength/5)*5
-		console.log(sliderMax)
 		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
 	}
 
@@ -239,7 +238,11 @@ export default class{
 	// Helper function to do first call to set drone range once the route data has been loaded onto the map
 	onSourceData = (e) => {
 		if (e.isSourceLoaded && e.sourceDataType != 'metadata'){ // I worked out these parameter checks by inspection and guesswork, may not be stable!
-			this.map.off('sourcedata', this.onSourceData);
+			this.map.off('sourcedata', this.onSourceData)
+			setTimeout(() => {
+				// HACK HACK HACK HACK HACK
+				this.setDroneRange(this.featureOptions.droneRange)
+			}, 100)
 		}
 	}
 
@@ -351,16 +354,6 @@ export default class{
 		}
 	}
 
-/*
-	generateTypes = (type_list) => {
-		this.featureOptions.types = type_list
-		this.options.dom.typeColours.innerHTML = ''
-		for(let type of type_list){
-			this.options.dom.typeColours.insertAdjacentHTML('beforeend',`<span style="--color: hsl(${type_list.indexOf(type)*29}, 72%, 53%)">${type}</span>`)
-			console.log(`%c${type}`, `background: hsl(${type_list.indexOf(type)*29}, 72%, 53%)`);
-		}
-	}*/
-
 	// **********************************************************
 	// Drone range handling
 
@@ -375,7 +368,7 @@ export default class{
 				{withinDroneRange: false}
 			)
 		}
-		
+		console.log(range)
 		// Filter routes by which ones are within range
 		const validRoutes = this.map.querySourceFeatures('routes', {
 			sourceLayer: 'routes',

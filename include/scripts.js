@@ -30,15 +30,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 		},
 		
 		onReady: () => {
-			// Load in initial CSV data
-			const response = fetch('include/data.csv')
-				.then(response => response.text())
-				.catch(err => console.log(err))
-			response.then(csv => {
-				document.querySelector('textarea').innerHTML = csv
+
+
+			const storedImportedData = localStorage.getItem("importedData")
+			if(storedImportedData){
+				document.querySelector('textarea').value = storedImportedData
 				generateLineNumbers(document.querySelector('textarea'))
-				myNetwork.csvIsUpdated(csv)
-			})
+				myNetwork.csvIsUpdated(storedImportedData)
+			}else{
+				// Load in initial CSV data
+				const response = fetch('include/data.csv')
+					.then(response => response.text())
+					.catch(err => console.log(err))
+				response.then(csv => {
+					document.querySelector('textarea').innerHTML = csv
+					generateLineNumbers(document.querySelector('textarea'))
+					myNetwork.csvIsUpdated(csv)
+				})
+			}
 		}
 	})
 
@@ -70,8 +79,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const newCSV = e.target.value.replace(/\t/gi,',')
 		e.target.value = newCSV // Substitute tabs for commas when pasting in, to help!
 
+		// Updagte line numbers
 		generateLineNumbers(e.target)
+
+		// Update network
 		myNetwork.csvIsUpdated(newCSV)
+
+		// Save changes to localStorage
+		localStorage.setItem("importedData", newCSV);
 	})
 
 	// **********************************************************
