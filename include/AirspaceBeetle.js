@@ -18,6 +18,9 @@ export default class{
 	map = null
 	hoveredRoute = null
 
+	// index of the new node we adding to a route
+	draggingNodeIndex = null
+
 	// Feature options
 	featureOptions = {
 		droneRange: 5
@@ -116,7 +119,7 @@ export default class{
 
 		// Add hover effects to routes
 		this.map.on('mousemove', 'routes', (e) => {
-			this.map.getCanvas().style.cursor = 'pointer'
+			this.map.getCanvas().style.cursor = 'crosshair'
 			if (e.features.length > 0) {
 
 				for(let feature of e.features){
@@ -146,7 +149,30 @@ export default class{
 				}
 			}
 		})
+
+		this.map.on('click', 'routes', (e) => {
+			if (e.features.length > 0) {
+				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
+				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
+
+				// Split the line based on the clicked location
+				const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
+				const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
+
+				// Update the line geometry to have the new coordinate spliced in
+				split.features[1].geometry.coordinates.shift()
+				const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
+				mapData_feature.geometry.coordinates = newCoords
+
+				// Regenerate the map
+				this.regenerateMap()
+			}
+		 });
+
 		this.map.on('mouseleave', 'routes', () => {
+
+			this.map.getCanvas().style.cursor = 'grab'
+
 			// Clear hover effect
 			if (this.hoveredRoute !== null) {
 				this.map.setFeatureState(
@@ -173,7 +199,7 @@ export default class{
 		})
 	}
 
-	regenerateMap = (options) => {
+	regenerateMap = () => {
 
 		// Clear old markers
 		for(let marker of this.mapData.markers){
@@ -183,7 +209,7 @@ export default class{
 		this.addMarkers()
 		
 		// Reapply the new routes
-		this.map.on('sourcedata', this.onSourceData);
+		this.map.on('sourcedata', this.onSourceData)
 		this.map.getSource('routes').setData(this.mapData.routes)
 
 		// Display list of all locations, routes etc
@@ -215,12 +241,8 @@ export default class{
 
 	// Add markers from geoJSON
 	addMarkers = () => {
-		// Clear old markers
-		for(let marker of this.mapData.markers){
-			marker.remove()
-		}
 
-		// Add markers again
+		// Add markers for all end locations
 		for (const feature of this.mapData.locations.features) {
 			// create a HTML element for each feature
 			const el = document.createElement('div')
@@ -238,6 +260,37 @@ export default class{
 			newElem.addEventListener('mouseleave', (e) => {
 				newElem.classList.remove('show-label')
 			})
+		}
+
+		// Add markers for extra nodes we added
+		for (const feature of this.mapData.routes.features) {
+
+			// Do we have any intermediate points?
+			if(feature.geometry.coordinates.length > 2){
+				console.log(feature.geometry.coordinates)
+
+				// Get just the intermediate points
+				const interpoints = [...feature.geometry.coordinates]
+				interpoints.shift()
+				interpoints.pop()
+
+				let pointIndex = 1
+				for (const point of interpoints) {
+					console.log(feature.geometry.coordinates[pointIndex])
+					// create a HTML element for each feature
+					const el = document.createElement('div')
+					el.className = 'marker-intermediate'
+					el.dataset.routeID = feature.properties.id
+					el.dataset.pointIndex = pointIndex
+					const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(point).addTo(this.map)
+					this.mapData.markers.push(newMarker)
+
+					newMarker.on('drag', (e) => {
+						feature.geometry.coordinates[e.target.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
+						this.map.getSource('routes').setData(this.mapData.routes)
+					})
+				}
+			}
 		}
 	}
 
@@ -291,8 +344,8 @@ export default class{
 			}
 
 			// Save coords
-			const source_coords = [parts[2], parts[1]]
-			const destination_coords = [parts[5], parts[4]]
+			const source_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
+			const destination_coords = [parseFloat(parts[5]), parseFloat(parts[4])]
 
 			// 1. Generate a route for this line
 			const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
