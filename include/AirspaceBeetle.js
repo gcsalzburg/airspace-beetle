@@ -120,13 +120,13 @@ export default class{
 		document.addEventListener('keydown', (e) => {
 			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
 			if(this.currentUIState == 'routeHover'){
-				this.map.getCanvas().style.cursor = 'crosshair'
+				this.map.getCanvasContainer().style.cursor = 'crosshair'
 			}
 	 	})
 		document.addEventListener('keyup', (e) => {
 			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
 			if(this.currentUIState == 'routeHover'){
-				this.map.getCanvas().style.cursor = 'default'
+				this.map.getCanvasContainer().style.cursor = 'default'
 			}
 		})
 
@@ -265,7 +265,7 @@ export default class{
 				// Set cursor, based on if CTRL key held down or not
 
 				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
-					this.map.getCanvas().style.cursor = this.ctrlKeyHeld ? 'crosshair' : 'default'
+					this.map.getCanvasContainer().style.cursor = this.ctrlKeyHeld ? 'crosshair' : 'default'
 					this.highlightRoute(options.feature)
 					this.currentUIState = state
 				}
@@ -286,7 +286,7 @@ export default class{
 
 				if(this.currentUIState != 'waypointDrag'){
 					this.highlightRoute(options.feature)
-					this.map.getCanvas().style.cursor = 'move'
+					this.map.getCanvasContainer().style.cursor = 'move'
 					this.currentUIState = state
 				}
 
@@ -304,7 +304,7 @@ export default class{
 				// Match whatver the above is
 				// Add follower with the length of the route
 				this.highlightRoute(options.feature)
-				this.map.getCanvas().style.cursor = 'move'
+				this.map.getCanvasContainer().style.cursor = 'move'
 				this.currentUIState = state
 				break
 
@@ -316,7 +316,7 @@ export default class{
 			case 'initial':
 				// Default case here
 
-				this.map.getCanvas().style.cursor = 'grab'
+				this.map.getCanvasContainer().style.cursor = 'grab'
 
 				// Clear any route hover effects
 				if (this.hoveredRoute !== null) {
@@ -339,7 +339,7 @@ export default class{
 		}
 
 		if(currentState != this.currentUIState){
-			console.log(`State changed from [${currentState}] to [${this.currentUIState}]`)
+		//	console.log(`State changed from [${currentState}] to [${this.currentUIState}]`)
 		}
 
 	}
@@ -474,7 +474,7 @@ export default class{
 						feature.geometry.coordinates[newMarker.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
 
 						// Re-render
-						feature.properties.pathDistance = turf.length(feature, 'kilometers')
+						feature.properties.pathDistance = turf.length(feature, 'kilometers')						
 						this.regenerateMap({markers: false})
 
 						// Show follower
