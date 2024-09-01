@@ -139,9 +139,7 @@ h1{
 .marker-intermediate{
 	--marker_width: var(--dz_width);
 
-	width: var(--marker_width);
 	border-radius: 50%;
-	cursor: pointer;
 	aspect-ratio: 1;
 	box-shadow: 0px 0px 5px 0px white;
 
@@ -152,7 +150,6 @@ h1{
 .marker-intermediate:hover{
 	--marker_width: 10px;
 	border-width: 3px;
-	cursor: grab;
 }
 
 

@@ -19,7 +19,7 @@ export default class{
 	hoveredRoute = null
 
 	// index of the new node we adding to a route
-	draggingNodeIndex = null
+	isHoveringOnIntermediatePoint = false
 
 	// Feature options
 	featureOptions = {
@@ -254,7 +254,7 @@ export default class{
 
 			// Add marker hover
 			const newElem = newMarker.getElement()
-			newElem.addEventListener('mouseenter', (e) => {
+			newElem.addEventListener('mouseover', (e) => {
 				newElem.classList.add('show-label')
 			})
 			newElem.addEventListener('mouseleave', (e) => {
@@ -274,20 +274,50 @@ export default class{
 				interpoints.shift()
 				interpoints.pop()
 
-				let pointIndex = 1
 				for (const point of interpoints) {
-					console.log(feature.geometry.coordinates[pointIndex])
 					// create a HTML element for each feature
 					const el = document.createElement('div')
 					el.className = 'marker-intermediate'
 					el.dataset.routeID = feature.properties.id
-					el.dataset.pointIndex = pointIndex
+					el.dataset.pointIndex = -1
 					const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(point).addTo(this.map)
 					this.mapData.markers.push(newMarker)
 
-					newMarker.on('drag', (e) => {
-						feature.geometry.coordinates[e.target.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
+					// Add marker hover
+					const newElem = newMarker.getElement()
+					newElem.addEventListener('mouseenter', () => {
+						console.log('enter')
+						this.isHoveringOnIntermediatePoint = true
+						this.map.getCanvas().style.cursor = 'move'
+					})
+					newElem.addEventListener('mouseleave', () => {
+						console.log('leave')
+						this.isHoveringOnIntermediatePoint = false
+						this.map.getCanvas().style.cursor = 'grab'
+					})
+
+					// When dragging begins, work out which of the nodes on the path behind it that this marker relates to
+					newMarker.on('dragstart', () => {
+
+						// Calculate which is the nearest intermediate point to this marker
+						const points = turf.featureCollection(feature.geometry.coordinates.map(coord => turf.point(coord)));
+						const nearestPoint = turf.nearestPoint(turf.point(newMarker.getLngLat().toArray()), points)
+
+						// Save index of this point for use in a minute
+						newMarker.getElement().dataset.pointIndex = points.features.findIndex(feature => 
+							feature.geometry.coordinates[0] === nearestPoint.geometry.coordinates[0] &&
+							feature.geometry.coordinates[1] === nearestPoint.geometry.coordinates[1]
+						 )
+					})
+
+					// Whilst dragging, update the path behind too
+					newMarker.on('drag', () => {
+						feature.geometry.coordinates[newMarker.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
 						this.map.getSource('routes').setData(this.mapData.routes)
+					})
+
+					newMarker.on('click', (e) => {
+						console.log(e)
 					})
 				}
 			}
@@ -384,6 +414,7 @@ export default class{
 	// Render a warning underneath that an error occurred
 	addImportError = (rowNum, errorMessage, rowContents) => {
 		this.options.dom.lineNumbers.querySelector(`:nth-child(${rowNum})`).classList.add('has-error')
+		this.options.dom.lineNumbers.querySelector(`:nth-child(${rowNum})`).setAttribute('title', errorMessage)
 
 		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = parseInt(this.options.dom.importWarning.querySelector('.num-rows').innerHTML)+1
 		this.options.dom.importWarning.classList.add('show')
