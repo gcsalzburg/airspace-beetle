@@ -11,3 +11,11 @@
 + ~Add the slider for route length cutoff back in~
 + ~Move initial example data to separate file~
 + ~Use localStorage to save data and any settings~
+
++ Sort hover effects when editing a line
++ Continually update the distance of the route when dragging (show straight line distance AND full path distance)
++ Colour routes by distance along a gradient - toggle on/off
++ Make filters section, filter by drone range, by date etc
++ Lock CSV import after you start adding points
++ Make flow Import -> Design -> Export
++ localStorage for geoJSON not just the original CSV

@@ -18,12 +18,11 @@ export default class{
 	map = null
 	hoveredRoute = null
 
-	// index of the new node we adding to a route
-	isHoveringOnIntermediatePoint = false
+	currentUIState = 'initial'
 
 	// Feature options
 	featureOptions = {
-		droneRange: 5
+		droneRange: 20
 	}
  
 	// Default options are below
@@ -117,41 +116,29 @@ export default class{
 			}
 		})
 
+		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waypoint effect)
+		document.addEventListener('keydown', (e) => {
+			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+			if(this.currentUIState == 'routeHover'){
+				this.map.getCanvas().style.cursor = 'crosshair'
+			}
+	 	})
+		document.addEventListener('keyup', (e) => {
+			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+			if(this.currentUIState == 'routeHover'){
+				this.map.getCanvas().style.cursor = 'default'
+			}
+		})
+
 		// Add hover effects to routes
 		this.map.on('mousemove', 'routes', (e) => {
-			this.map.getCanvas().style.cursor = 'crosshair'
 			if (e.features.length > 0) {
-
-				for(let feature of e.features){
-					if(feature.properties.distance < this.featureOptions.droneRange){
-						// Unhighlight current hovered one
-						if (this.hoveredRoute !== null) {
-							this.map.setFeatureState(
-								{source: 'routes', id: this.hoveredRoute},
-								{hover: false}
-							)
-						}
-
-						// Highlight new one
-						this.hoveredRoute = feature.id
-						this.map.setFeatureState(
-							{source: 'routes', id: feature.id},
-							{hover: true}
-						)
-						this.options.follower.set(`${Math.round(feature.properties.distance*10)/10} km`, {style: 'route'})
-
-						// Add location labels
-						document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
-						document.querySelector(`.marker[data-name="${feature.properties.source}"]`).classList.add('show-label')
-						document.querySelector(`.marker[data-name="${feature.properties.destination}"]`).classList.add('show-label')
-						break
-					}
-				}
+				this.setUIState('routeHover', {feature: e.features[0]})
 			}
 		})
 
 		this.map.on('click', 'routes', (e) => {
-			if (e.features.length > 0) {
+			if (e.features.length > 0 && this.ctrlKeyHeld) {
 				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
 				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
 
@@ -170,59 +157,59 @@ export default class{
 		 });
 
 		this.map.on('mouseleave', 'routes', () => {
-
-			this.map.getCanvas().style.cursor = 'grab'
-
-			// Clear hover effect
-			if (this.hoveredRoute !== null) {
-				this.map.setFeatureState(
-					{source: 'routes', id: this.hoveredRoute},
-					{hover: false}
-				)
-			}
-			this.hoveredRoute = null
-			this.options.follower.clear()
-
-			// Clear location labels too
-			document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+			this.setUIState('routeLeave')
 		})
 
 		// Add hover effects to list of locations on side
 		this.options.dom.locationsList.addEventListener('mousemove', (e) => {
 			const location = e.target.closest('.location')
 			if(location){
-				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
-				document.querySelector(`.marker[data-name="${location.dataset.name}"]`).classList.add('show-label')
+				this.setUIState('locationHover', {location: location.dataset.name})
 			}else{
-				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+				this.setUIState('initial')
 			}
+		})
+		this.options.dom.locationsList.addEventListener('mouseleave', (e) => {
+			this.setUIState('initial')
 		})
 	}
 
-	regenerateMap = () => {
+	regenerateMap = (options) => {
 
-		// Clear old markers
-		for(let marker of this.mapData.markers){
-			marker.remove()
+		const _options = {...{
+			markers: true,
+			routes: true,
+			metadata: true
+		}, ...options}
+	
+		if(_options.markers){
+			// Clear old markers
+			for(let marker of this.mapData.markers){
+				marker.remove()
+			}
+			// Add new markers
+			this.addMarkers()
 		}
-		// Add new markers
-		this.addMarkers()
-		
-		// Reapply the new routes
-		this.map.on('sourcedata', this.onSourceData)
-		this.map.getSource('routes').setData(this.mapData.routes)
+			
+		if(_options.routes){
+			// Reapply the new routes
+			this.map.on('sourcedata', this.onSourceData)
+			this.map.getSource('routes').setData(this.mapData.routes)
+		}
 
-		// Display list of all locations, routes etc
-		this.createRoutesData()
-		this.createLocationsList()
+		if(_options.metadata){
+			// Display list of all locations, routes etc
+			this.createRoutesData()
+			this.createLocationsList()
+		}
 	}
 
 	createRoutesData = () => {
 		this.options.dom.routesData.querySelector('.num-routes').innerHTML = this.mapData.routes.features.length
 
 		// Get min/max route length
-		const maxRouteLength = this.mapData.routes.features.reduce((max, feature) => Math.max(max, feature.properties.distance), -Infinity)
-		const minRouteLength = this.mapData.routes.features.reduce((min, feature) => Math.min(min, feature.properties.distance), Infinity)
+		const maxRouteLength = this.mapData.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
+		const minRouteLength = this.mapData.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity)
 		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(minRouteLength*10)/10} - ${Math.round(maxRouteLength*10)/10} km)`
 
 		// Set bounds of range slider
@@ -237,6 +224,174 @@ export default class{
 		locationsList.forEach(item => {
 			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${item.name}"><span class="num">${item.numRoutes}</span> ${item.name}</div>`)
 		})
+	}
+
+	setUIState = (state, options = {}) => {
+
+		// Save for reference
+		const currentState = this.currentUIState
+
+		// Clear any differences here
+		if(state == this.currentUIState){
+			// Do nothing?
+			return
+		}
+
+		switch(state){
+
+			case 'locationHover':
+				// Show the hovered name for this location
+				// (maybe) highlight all routes to/from this location
+
+				if(this.currentUIState != 'waypointDrag'){
+					document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+					document.querySelector(`.marker[data-name="${options.location}"]`).classList.add('show-label')
+					this.currentUIState = state
+				}
+
+				break
+
+			case 'locationLeave':
+				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
+					this.setUIState('initial')
+					this.currentUIState = state
+				}
+				break
+
+			case 'routeHover':
+				// Highlight the route
+				// Label the start and end locations
+				// Add follower with the length of the route
+				// Set cursor, based on if CTRL key held down or not
+
+				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
+					this.map.getCanvas().style.cursor = this.ctrlKeyHeld ? 'crosshair' : 'default'
+					this.highlightRoute(options.feature)
+					this.currentUIState = state
+				}
+				
+				break
+			
+			case 'routeLeave':
+				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
+					this.setUIState('initial')
+					this.currentUIState = state
+				}
+				break
+
+			case 'waypointHover':
+				// Change cursor to move cursor
+				// (maybe) make the route dashed to show it is about to be edited
+				// Add follower with the length of the route
+
+				if(this.currentUIState != 'waypointDrag'){
+					this.highlightRoute(options.feature)
+					this.map.getCanvas().style.cursor = 'move'
+					this.currentUIState = state
+				}
+
+				break
+
+			case 'waypointLeave':
+				if(this.currentUIState != 'waypointDrag'){
+					// TODO: Do we switch to the route hover at this point or not?
+					this.setUIState('initial')
+					this.currentUIState = state
+				}
+				break
+
+			case 'waypointDrag':
+				// Match whatver the above is
+				// Add follower with the length of the route
+				this.highlightRoute(options.feature)
+				this.map.getCanvas().style.cursor = 'move'
+				this.currentUIState = state
+				break
+
+			case 'waypointDragEnd':
+				this.setUIState('initial')
+				this.currentUIState = state
+				break
+
+			case 'initial':
+				// Default case here
+
+				this.map.getCanvas().style.cursor = 'grab'
+
+				// Clear any route hover effects
+				if (this.hoveredRoute !== null) {
+					this.map.setFeatureState(
+						{source: 'routes', id: this.hoveredRoute},
+						{hover: false}
+					)
+					this.hoveredRoute = null
+				}
+
+				// Clear the follower
+				this.clearFollower()
+	
+				// Clear location labels too
+				this.showLocationLabels()
+
+				this.currentUIState = state
+
+				break
+		}
+
+		if(currentState != this.currentUIState){
+			console.log(`State changed from [${currentState}] to [${this.currentUIState}]`)
+		}
+
+	}
+
+	highlightRoute = (feature) => {
+		// Apply feature state to the correct route
+		// Only do the hover if we are within the droneRange or not
+		// TODO: Make this filtering more generic
+		if(feature.properties.pathDistance < this.featureOptions.droneRange){
+
+			// Unhighlight current hovered one
+			if (this.hoveredRoute !== null) {
+				this.map.setFeatureState(
+					{source: 'routes', id: this.hoveredRoute},
+					{hover: false}
+				)
+			}
+
+			// Highlight new one
+			this.hoveredRoute = feature.id
+			this.map.setFeatureState(
+				{source: 'routes', id: feature.id},
+				{hover: true}
+			)
+
+			// Set the follower with distance
+			this.setFollowerDistance(feature.properties.pathDistance)
+
+			// Add location labels
+			this.showLocationLabels([feature.properties.source, feature.properties.destination])
+		}
+	}
+
+	// Helper to show/hide location labels
+	showLocationLabels = (labels = null) => {
+		document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+
+		if(Array.isArray(labels)){
+			for(let label of labels){
+				document.querySelector(`.marker[data-name="${label}"]`).classList.add('show-label')
+			}
+		}else if(labels !== null){
+			document.querySelector(`.marker[data-name="${labels}"]`).classList.add('show-label')
+		}
+	}
+
+	// Helpers for the follower that shows the total distance
+	setFollowerDistance = (distance) => {
+		this.options.follower.set(`${Math.round(distance*10)/10} km`, {style: 'route'})
+	}
+	clearFollower = () => {
+		this.options.follower.clear()
 	}
 
 	// Add markers from geoJSON
@@ -254,22 +409,21 @@ export default class{
 
 			// Add marker hover
 			const newElem = newMarker.getElement()
-			newElem.addEventListener('mouseover', (e) => {
-				newElem.classList.add('show-label')
+			newElem.addEventListener('mouseover', () => {
+				this.setUIState('locationHover', {location:feature.properties.name})
 			})
-			newElem.addEventListener('mouseleave', (e) => {
-				newElem.classList.remove('show-label')
+			newElem.addEventListener('mouseleave', () => {
+				this.setUIState('locationLeave')
 			})
 		}
 
 		// Add markers for extra nodes we added
 		for (const feature of this.mapData.routes.features) {
 
-			// Do we have any intermediate points?
+			// Do we have any waypoints?
 			if(feature.geometry.coordinates.length > 2){
-				console.log(feature.geometry.coordinates)
 
-				// Get just the intermediate points
+				// Get just the waypoints
 				const interpoints = [...feature.geometry.coordinates]
 				interpoints.shift()
 				interpoints.pop()
@@ -277,29 +431,31 @@ export default class{
 				for (const point of interpoints) {
 					// create a HTML element for each feature
 					const el = document.createElement('div')
-					el.className = 'marker-intermediate'
+					el.className = 'marker-waypoint'
 					el.dataset.routeID = feature.properties.id
 					el.dataset.pointIndex = -1
 					const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(point).addTo(this.map)
 					this.mapData.markers.push(newMarker)
 
+					// Find the mapbox feature on the map corresponding to this route
+					const mapboxRouteFeatures = this.map.querySourceFeatures('routes', {
+						filter: ['==', 'id', feature.properties.id]
+					})
+					const mapboxRouteFeature = mapboxRouteFeatures[0]
+
 					// Add marker hover
 					const newElem = newMarker.getElement()
 					newElem.addEventListener('mouseenter', () => {
-						console.log('enter')
-						this.isHoveringOnIntermediatePoint = true
-						this.map.getCanvas().style.cursor = 'move'
+						this.setUIState('waypointHover', {feature: mapboxRouteFeature})
 					})
 					newElem.addEventListener('mouseleave', () => {
-						console.log('leave')
-						this.isHoveringOnIntermediatePoint = false
-						this.map.getCanvas().style.cursor = 'grab'
+						this.setUIState('waypointLeave')
 					})
 
 					// When dragging begins, work out which of the nodes on the path behind it that this marker relates to
 					newMarker.on('dragstart', () => {
 
-						// Calculate which is the nearest intermediate point to this marker
+						// Calculate which is the nearest waypoint to this marker
 						const points = turf.featureCollection(feature.geometry.coordinates.map(coord => turf.point(coord)));
 						const nearestPoint = turf.nearestPoint(turf.point(newMarker.getLngLat().toArray()), points)
 
@@ -307,17 +463,26 @@ export default class{
 						newMarker.getElement().dataset.pointIndex = points.features.findIndex(feature => 
 							feature.geometry.coordinates[0] === nearestPoint.geometry.coordinates[0] &&
 							feature.geometry.coordinates[1] === nearestPoint.geometry.coordinates[1]
-						 )
+						)
+
+						this.setUIState('waypointDrag', {feature: mapboxRouteFeature})
 					})
 
 					// Whilst dragging, update the path behind too
 					newMarker.on('drag', () => {
+						// Update node in the coordinates for this feature
 						feature.geometry.coordinates[newMarker.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
-						this.map.getSource('routes').setData(this.mapData.routes)
-					})
 
-					newMarker.on('click', (e) => {
-						console.log(e)
+						// Re-render
+						feature.properties.pathDistance = turf.length(feature, 'kilometers')
+						this.regenerateMap({markers: false})
+
+						// Show follower
+						this.setFollowerDistance(feature.properties.pathDistance)
+					})
+					
+					newMarker.on('dragend', () => {
+						this.setUIState('waypointDragEnd')
 					})
 				}
 			}
@@ -385,7 +550,8 @@ export default class{
 					id: Math.random()*10000,
 					source: parts[0],
 					destination: parts[3],
-					distance: distance
+					crowDistance: distance,
+					pathDistance: distance
 				},
 				geometry: {
 					type: 'LineString',
@@ -461,7 +627,7 @@ export default class{
 			sourceLayer: 'routes',
 			filter: [
 				'all',
-				['<', ['to-number', ['get', 'distance']], this.featureOptions.droneRange]
+				['<', ['to-number', ['get', 'pathDistance']], this.featureOptions.droneRange]
 			]
 		})
 	

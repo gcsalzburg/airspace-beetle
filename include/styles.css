@@ -93,7 +93,7 @@ h1{
 	background: var(--color-primary);
 	width: var(--marker_width);
 	border-radius: 50%;
-	cursor: pointer;
+	cursor: default;
 	aspect-ratio: 1;
 	box-shadow: 0px 0px 5px 0px white;
 }
@@ -133,10 +133,10 @@ h1{
 }
 
 /* *********************************************************** */
-/* Markers - intermediate points                               */
+/* Markers - waypoints                               */
 /* *********************************************************** */
 
-.marker-intermediate{
+.marker-waypoint{
 	--marker_width: var(--dz_width);
 
 	border-radius: 50%;
@@ -147,7 +147,7 @@ h1{
 	background: hsl(0, 0%, 100%);
 	width: calc(var(--marker_width) - (2 * var(--hover_border_width)));
 }
-.marker-intermediate:hover{
+.marker-waypoint:hover{
 	--marker_width: 10px;
 	border-width: 3px;
 }
