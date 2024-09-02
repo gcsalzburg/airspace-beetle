@@ -20,3 +20,4 @@
 + Make flow Import -> Design -> Export
 + localStorage for geoJSON not just the original CSV
 + ~~Fix correct cursor when hovering on a waypoint that can be dragged~~
++ Snap to waypoint using turf.distance calc - https://stackoverflow.com/questions/39417535/mapbox-icons-markers-bearingsnap-or-snap-to-position
