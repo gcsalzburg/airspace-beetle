@@ -20,42 +20,42 @@
 
 	</head>
 
-	<body>
-			<nav>
+	<body data-panel="map">
+
+			<nav class="panel-nav">
 				<h1>airspace<span class="beetle">beetle</span></h1>
-				<a href="#data" class="nav-data">Import data</a>
-				<a href="#map" class="nav-map nav-selected">Design map</a>
+				<a href="#nav-data" class="nav-data">Load data</a>
+				<a href="#nav-map" class="nav-map">Design network</a>
 			</nav>
+
 			<main>
+
 				<section class="panel panel-data">
-
-
+					<h2>Imported routes</h2>
+					<div class="code">
+						<div class="editor">
+							<div class="line-numbers">
+								<span></span>
+							</div>
+							<textarea data-code="csv"></textarea>
+						</div>
+					</div>
+					<div class="import-result import-success">Successfully imported rows: <span class="num-rows">0</span></div>
+					<div class="import-result import-warning">Naughty rows: <span class="num-rows">0</span><ul class="warning-details"></ul></div>
 				</section>
+
 				<section class="panel panel-map">
+
 					<section class="map-container">
 						<div class="map"></div>
 					</section>
 
-					<section class="config-container">
-						<div class="code-container">
-							<nav>
-								<a href="#imported-data">Imported data</a>
-								<span class="mini-buttons">
-									<a href="#export-kml">.kml</a>
-									<a href="#toggle-width"></a>
-								</span>
-							</nav>
-							<div class="code">
-								<div class="editor">
-									<div class="line-numbers">
-										<span></span>
-									</div>
-									<textarea data-code="csv"></textarea>
-								</div>
-							</div>
-						</div>
+
+					<section class="map-options">
+
+						<a href="#export-kml">Export kml</a> |
+						<a href="#export-geojson">Export geojson</a>
 	
-						<div class="import-warning">Naughty rows: <span class="num-rows">0</span></div>
 						<div class="data-stats">
 							<h3>Routes</h3>
 							<div class="routes-data">

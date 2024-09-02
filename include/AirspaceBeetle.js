@@ -79,6 +79,10 @@ export default class{
 		})
 	}
 
+	updateMapContainer = () => {
+		this.map.resize()
+	}
+
 	// **********************************************************
 	// Map stuff
 
@@ -495,6 +499,7 @@ export default class{
 			this.map.off('sourcedata', this.onSourceData)
 			setTimeout(() => {
 				// HACK HACK HACK HACK HACK
+				// TODO try map.loaded()
 				this.setDroneRange(this.featureOptions.droneRange)
 			}, 100)
 		}
@@ -519,11 +524,14 @@ export default class{
 		if(this.options.dom.lineNumbers.children.length > 0){
 			this.options.dom.lineNumbers.querySelectorAll(`span`).forEach(span => span.classList.remove('has-error'))
 		}
+		this.options.dom.importSuccess.classList.remove('show')
 		this.options.dom.importWarning.classList.remove('show')
+		this.options.dom.importWarning.querySelector('.warning-details').innerHTML = ''
 		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = '0'
 
 		// Convert to geoJSON
 		let rowNum = 0
+		let rowSuccessCount = 0
 		for(let row of csv.split('\n')){
 			rowNum++
 			const parts = row.split(',')
@@ -542,35 +550,39 @@ export default class{
 			const source_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
 			const destination_coords = [parseFloat(parts[5]), parseFloat(parts[4])]
 
-			// 1. Generate a route for this line
-			const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
-			const newRoute = {
-				type: "Feature",
-				properties: {
-					id: Math.random()*10000,
-					source: parts[0],
-					destination: parts[3],
-					crowDistance: distance,
-					pathDistance: distance
-				},
-				geometry: {
-					type: 'LineString',
-					coordinates: [
-						source_coords,
-						destination_coords,
-					]
+			// Save the location if it is a unique location
+			if(this.addLocation(parts[0], source_coords, rowNum) && this.addLocation(parts[3], destination_coords, rowNum)){
+				// Generate a route for this line
+				const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
+				const newRoute = {
+					type: "Feature",
+					properties: {
+						id: Math.random()*10000,
+						source: parts[0],
+						destination: parts[3],
+						crowDistance: distance,
+						pathDistance: distance
+					},
+					geometry: {
+						type: 'LineString',
+						coordinates: [
+							source_coords,
+							destination_coords,
+						]
+					}
 				}
+				for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
+					// TODO make this more intelligent, with an axis to roll out the places over time
+					newRoute.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
+				}
+				this.mapData.routes.features.push(newRoute)
+				rowSuccessCount++
 			}
-			for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
-				// TODO make this more intelligent, with an axis to roll out the places over time
-				newRoute.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
-			}
-			this.mapData.routes.features.push(newRoute)
+		}
 
-			// 2. Save the location if it is a unique location
-			this.addLocation(parts[0], source_coords)
-			this.addLocation(parts[3], destination_coords)
-
+		if(rowSuccessCount > 0){
+			this.options.dom.importSuccess.querySelector('.num-rows').innerHTML = rowSuccessCount
+			this.options.dom.importSuccess.classList.add('show')
 		}
 
 		// Add the nodes as markers
@@ -584,11 +596,12 @@ export default class{
 
 		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = parseInt(this.options.dom.importWarning.querySelector('.num-rows').innerHTML)+1
 		this.options.dom.importWarning.classList.add('show')
-		console.warn(rowNum, errorMessage, rowContents)
+
+		this.options.dom.importWarning.querySelector('.warning-details').insertAdjacentHTML('beforeend', `<li>Row ${rowNum}: ${errorMessage}<br><i>${rowContents}</i>`)
 	}
 
 	// Add a location to the list
-	addLocation = (name, coords) => {
+	addLocation = (name, coords, rowNum) => {
 		const existingLocation = this.findObjectByProperty(this.mapData.locations.features, "properties.name", name)
 		if(!existingLocation){
 			this.mapData.locations.features.push({
@@ -603,8 +616,15 @@ export default class{
 					// TODO: Add a property called "earliest date" or something
 				}
 			})
+			return true
 		}else{
-			existingLocation.properties.numRoutes++
+			if((existingLocation.geometry.coordinates[0] == coords[0]) && (existingLocation.geometry.coordinates[1] == coords[1])){
+				existingLocation.properties.numRoutes++
+				return true
+			}else{
+				this.addImportError(rowNum, `Duplicate location name: ${name}`, `${coords} vs. ${existingLocation.geometry.coordinates}`)
+				return false
+			}
 		}
 	}
 

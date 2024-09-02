@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 			locationsList: document.querySelector('.locations-list'),
 			routesData: document.querySelector('.routes-data'),
 			lineNumbers: document.querySelector('.line-numbers'),
+			importSuccess: document.querySelector('.import-success'),
 			importWarning: document.querySelector('.import-warning'),
 			droneRangeSlider: document.querySelector('.drone-range')
 		},
@@ -64,16 +65,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 	})
 
 	// **********************************************************
-/*
-	document.querySelector('.route-mode-wrapper select').addEventListener("input", (e) => {
-		myNetwork.setRouteType(e.target.value)
-	})
-
-	document.querySelector('.type-colour-wrapper input').addEventListener("input", (e) => {
-		document.body.dataset.showTypeColours = e.target.checked
-	})
-*/
-	// **********************************************************
 	// Handle code input textboxes
 
 	document.querySelector('textarea').addEventListener("input", (e) => {
@@ -103,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// **********************************************************
 	// Handle buttons
 
-	document.querySelectorAll('.options a, .code-container a').forEach(link => link.addEventListener('click', async (e) => {
+	document.querySelectorAll('.panel-nav a, .options a, .code-container a').forEach(link => link.addEventListener('click', async (e) => {
 		e.preventDefault()
 
 		// Get the hash, to work out what sort of switch it is
@@ -112,6 +103,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const hash = url_target.substring(url_target.indexOf('#') + 1)
 
 		switch(hash){
+
+			case 'nav-data':
+				document.body.dataset.panel = 'data'
+				break
+
+			case 'nav-map':
+				document.body.dataset.panel = 'map'
+				myNetwork.updateMapContainer()
+				break
 
 			case 'toggle-width':
 				document.body.classList.toggle('expand-config-container')
@@ -135,13 +135,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 				break
 		}
 	}))
-
-	document.querySelector('textarea').addEventListener('focus', (e) => {
-		document.querySelector('.code-container').classList.toggle('is-editing', true)
-	});
-	document.querySelector('textarea').addEventListener('blur', (e) => {
-		document.querySelector('.code-container').classList.toggle('is-editing', false)
-	});
 
 	const exportGeoJSON = (geojson) => {
 
