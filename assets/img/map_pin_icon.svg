@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 256 256">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #fff;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 16px;
+      }
+    </style>
+  </defs>
+  <circle class="cls-1" cx="128" cy="104" r="32"/>
+  <path class="cls-1" d="M208,104c0,72-80,128-80,128,0,0-80-56-80-128S83.8,24,128,24s80,35.8,80,80Z"/>
+</svg>

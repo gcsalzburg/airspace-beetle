@@ -5,6 +5,8 @@
 :root {
 	--color-primary: rgb(11, 100, 254);
 
+	--color-nav-bg: rgb(47, 45, 46);
+
 	--color-code-panel: hsl(0, 0%, 87%);
 	--color-positive: rgb(133, 203, 51);
 	--color-negative: rgb(255, 101, 32);
@@ -12,9 +14,11 @@
 
 	--color-map-routes: rgb(255, 192, 58);
 
-	--color-page-bg: #f2f2f2;
+	--color-page-bg: #FCFCFC;
 	--color-body-text: rgb(0, 0, 0);
 	--color-link: var(--color-primary);
+
+	--color-accent-1: rgb(246, 249, 48);
 }
 
 
@@ -32,16 +36,92 @@ html, body{
 	background: var(--color-primary);
 	color: var(--color-page-bg);
 }
+
+
 a{
 	color: var(--color-link);
 }
 body{
 	background-color: var(--color-page-bg);
 	color: var(--color-body-text);
-	padding: 2em;
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
+	min-height: 100%;
+}
+
+nav{
+	background: var(--color-nav-bg);
+	color: white;
+	height: 80px;
+	display: flex;
+	flex-direction: row;
+}
+
+h1{
+	font-size: 1.1em;
+  	margin: 0 0 1em;
+	font-weight: 200;
+	color: white;
+	display: flex;
+	align-items: center;
+	margin: 0 50px 0 30px;
+}
+h1 .beetle{
+	font-weight: 500;
+}
+
+nav > a{
+	display: flex;
+	align-items: center;
+	font-weight: 300;
+	color: white;
+	text-decoration: none;
+	background: no-repeat;
+	background-size: 32px;
+	background-position: 10px center;
+	padding: 0 10px 0 50px;
+	margin: 0 20px 0 0;
+	position: relative;
+	border-bottom: 3px solid transparent;
+}
+nav > a:not(:last-of-type)::after{
+	content: "";
+	background: hsl(0, 0%, 35%);
+	display: block;
+	position: absolute;
+	right: -10px;
+	top: 10px;
+	bottom:10px;
+	width: 1px; 
+}
+nav > a:hover{
+	border-color: var(--color-accent-1);
+}
+nav > a.nav-selected{
+	border-color: var(--color-accent-1);
+	border-bottom-width: 5px;
+}
+
+.nav-data{
+	background-image: url('/assets/img/table_icon.svg');
+}
+.nav-map{
+	background-image: url('/assets/img/map.svg');
+}
+
+
+/* *********************************************************** */
+/* Panels                                                      */
+/* *********************************************************** */
+
+.panel{
+	width: 100%;
+	height: 100%;
+	position: relative;
+}
+.panel-data{
+	display: none;
 }
 
 main{
@@ -52,22 +132,15 @@ main{
 }
 
 .map-container{
-	width: 75%;
-	flex-shrink: 0;
-}
-.expand-config-container .map-container{
-	width: 40%;
+	width: 100%;
+	height: 100%;
 }
 .config-container{
-	padding-left: 1em;
-	flex-grow: 1;
-}
-
-h1{
-	font-size: 1.4em;
-  	margin: 0 0 1em;
-	font-weight: 500;
-	color: var(--color-primary);
+	position: absolute;
+	right: 1em;
+	top: 1em;
+	background: white;
+	padding: 1em;
 }
 
 /* *********************************************************** */

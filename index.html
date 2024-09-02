@@ -8,7 +8,7 @@
 		<!-- Google Fonts -->
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Inter+Tight:wght@100..900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Inter+Tight:wght@100..900&family=Poppins:wght@200;300;400;600&display=swap" rel="stylesheet">
 
 		<link rel="stylesheet" href="include/styles.css">
 
@@ -21,84 +21,93 @@
 	</head>
 
 	<body>
-			<header>
-				<h1>🪲 airspace beetle</h1>
-				<nav></nav>
-			</header>
+			<nav>
+				<h1>airspace<span class="beetle">beetle</span></h1>
+				<a href="#data" class="nav-data">Import data</a>
+				<a href="#map" class="nav-map nav-selected">Design map</a>
+			</nav>
 			<main>
-				<section class="map-container">
-					<div class="map"></div>
-				</section>
-				<section class="config-container">
-					<div class="code-container">
-						<nav>
-							<a href="#imported-data">Imported data</a>
-							<span class="mini-buttons">
-								<a href="#export-kml">.kml</a>
-								<a href="#toggle-width"></a>
-							</span>
-						</nav>
-						<div class="code">
-							<div class="editor">
-								<div class="line-numbers">
-									<span></span>
-								</div>
-								<textarea data-code="csv"></textarea>
-							</div>
-						</div>
-					</div>
+				<section class="panel panel-data">
 
-					<div class="import-warning">Naughty rows: <span class="num-rows">0</span></div>
-					<div class="data-stats">
-						<h3>Routes</h3>
-						<div class="routes-data">
-							<div>Total routes: <span class="num-routes">0</span> <span class="route-length"></span></div>
-							<div class="drone-range-wrapper">
-								<label for="drone-range">Drone range:</label>
-								<span class="slider">
-									<input type="range" class="drone-range" id="drone-range" name="drone-range" min="0" max="25" step="1" list="drone-range-ticklist" value="25" />
-									<datalist id="drone-range-ticklist">
-										<option value="0"></option>
-										<option label="5" value="5"></option>
-										<option label="10" value="10"></option>
-										<option label="15" value="15"></option>
-										<option label="20" value="20"></option>
-										<option label="25" value="25"></option>
-										<option label="30" value="30"></option>
-										<option label="35" value="35"></option>
-										<option label="40" value="40"></option>
-										<option label="45" value="45"></option>
-										<option label="50" value="50"></option>
-										<option label="55" value="55"></option>
-										<option label="60" value="60"></option>
-										<option label="65" value="65"></option>
-									 </datalist>
+
+				</section>
+				<section class="panel panel-map">
+					<section class="map-container">
+						<div class="map"></div>
+					</section>
+
+					<section class="config-container">
+						<div class="code-container">
+							<nav>
+								<a href="#imported-data">Imported data</a>
+								<span class="mini-buttons">
+									<a href="#export-kml">.kml</a>
+									<a href="#toggle-width"></a>
 								</span>
-								<span class="value">25 km</span>
+							</nav>
+							<div class="code">
+								<div class="editor">
+									<div class="line-numbers">
+										<span></span>
+									</div>
+									<textarea data-code="csv"></textarea>
+								</div>
 							</div>
 						</div>
-						<h3>Locations</h3>
-						<div class="locations-list"></div>
-					</div>
-				<!--	<div class="feature-options">
-						
-						<div class="route-mode-wrapper">
-							<label for="mode">Mode:</label>
-							<select name="mode" id="mode">
-								<option value="hub-spoke">Hub & spoke</option>
-								<option value="multi-hop">Multi-hop</option>
-							</select>
+	
+						<div class="import-warning">Naughty rows: <span class="num-rows">0</span></div>
+						<div class="data-stats">
+							<h3>Routes</h3>
+							<div class="routes-data">
+								<div>Total routes: <span class="num-routes">0</span> <span class="route-length"></span></div>
+								<div class="drone-range-wrapper">
+									<label for="drone-range">Drone range:</label>
+									<span class="slider">
+										<input type="range" class="drone-range" id="drone-range" name="drone-range" min="0" max="25" step="1" list="drone-range-ticklist" value="25" />
+										<datalist id="drone-range-ticklist">
+											<option value="0"></option>
+											<option label="5" value="5"></option>
+											<option label="10" value="10"></option>
+											<option label="15" value="15"></option>
+											<option label="20" value="20"></option>
+											<option label="25" value="25"></option>
+											<option label="30" value="30"></option>
+											<option label="35" value="35"></option>
+											<option label="40" value="40"></option>
+											<option label="45" value="45"></option>
+											<option label="50" value="50"></option>
+											<option label="55" value="55"></option>
+											<option label="60" value="60"></option>
+											<option label="65" value="65"></option>
+										 </datalist>
+									</span>
+									<span class="value">25 km</span>
+								</div>
+							</div>
+							<h3>Locations</h3>
+							<div class="locations-list"></div>
 						</div>
-						<div class="type-colour-wrapper">
-							<label for="type-colour">Colour by type:</label>
-							<input type="checkbox" id="type-colour" name="type-colour">
-							<div class="type-colours"></div>
+					<!--	<div class="feature-options">
+							
+							<div class="route-mode-wrapper">
+								<label for="mode">Mode:</label>
+								<select name="mode" id="mode">
+									<option value="hub-spoke">Hub & spoke</option>
+									<option value="multi-hop">Multi-hop</option>
+								</select>
+							</div>
+							<div class="type-colour-wrapper">
+								<label for="type-colour">Colour by type:</label>
+								<input type="checkbox" id="type-colour" name="type-colour">
+								<div class="type-colours"></div>
+							</div>
 						</div>
-					</div>
-					<div class="style-options">
+						<div class="style-options">
+	
+						</div>-->
+					</section>
 
-					</div>-->
-				</section>
+				</section>				
 			</main>
 		</main>
 		<script src="include/scripts.js" type="module"></script>
