@@ -7,6 +7,10 @@ export default class{
 			type: "FeatureCollection",
 			features: []					
 		},
+		waypoints: {
+			type: "FeatureCollection",
+			features: []	
+		},
 		routes: {
 			type: "FeatureCollection",
 			features: []					
@@ -22,7 +26,8 @@ export default class{
 
 	// Feature options
 	featureOptions = {
-		droneRange: 20
+		droneRange: 20,
+		snapDistance: 0.3, // kilometers
 	}
  
 	// Default options are below
@@ -120,17 +125,24 @@ export default class{
 			}
 		})
 
-		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waypoint effect)
+		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waynode effect)
 		document.addEventListener('keydown', (e) => {
 			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
-			if(this.currentUIState == 'routeHover'){
+		//	if(this.currentUIState == 'routeHover'){
 				this.map.getCanvasContainer().style.cursor = 'crosshair'
-			}
+		//	}
 	 	})
 		document.addEventListener('keyup', (e) => {
 			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
-			if(this.currentUIState == 'routeHover'){
+		//	if(this.currentUIState == 'routeHover'){
 				this.map.getCanvasContainer().style.cursor = 'default'
+		//	}
+		})
+
+		// Add click effect to map
+		this.map.on('click', (e) => {
+			if (this.ctrlKeyHeld && this.currentUIState && !['waynodeDrag', 'waynodeHover', 'routeHover'].includes(this.currentUIState)) {
+				this.createWaypoint(e.lngLat.toArray())
 			}
 		})
 
@@ -141,22 +153,27 @@ export default class{
 			}
 		})
 
+		// Add click effect to route
 		this.map.on('click', 'routes', (e) => {
-			if (e.features.length > 0 && this.ctrlKeyHeld) {
+			if (e.features.length > 0 && this.ctrlKeyHeld){
 				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
 				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
 
-				// Split the line based on the clicked location
-				const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
-				const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
 
-				// Update the line geometry to have the new coordinate spliced in
-				split.features[1].geometry.coordinates.shift()
-				const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
-				mapData_feature.geometry.coordinates = newCoords
+				if(mapData_feature.properties.pathDistance < this.featureOptions.droneRange){
 
-				// Regenerate the map
-				this.regenerateMap()
+					// Split the line based on the clicked location
+					const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
+					const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
+
+					// Update the line geometry to have the new coordinate spliced in
+					split.features[1].geometry.coordinates.shift()
+					const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
+					mapData_feature.geometry.coordinates = newCoords
+
+					// Regenerate the map
+					this.regenerateMap()
+				}
 			}
 		 });
 
@@ -232,9 +249,6 @@ export default class{
 
 	setUIState = (state, options = {}) => {
 
-		// Save for reference
-		const currentState = this.currentUIState
-
 		// Clear any differences here
 		if(state == this.currentUIState){
 			// Do nothing?
@@ -247,7 +261,7 @@ export default class{
 				// Show the hovered name for this location
 				// (maybe) highlight all routes to/from this location
 
-				if(this.currentUIState != 'waypointDrag'){
+				if(this.currentUIState != 'waynodeDrag'){
 					document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
 					document.querySelector(`.marker[data-name="${options.location}"]`).classList.add('show-label')
 					this.currentUIState = state
@@ -256,7 +270,7 @@ export default class{
 				break
 
 			case 'locationLeave':
-				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
+				if(!['waynodeDrag', 'waynodeHover'].includes(this.currentUIState)){
 					this.setUIState('initial')
 					this.currentUIState = state
 				}
@@ -268,7 +282,7 @@ export default class{
 				// Add follower with the length of the route
 				// Set cursor, based on if CTRL key held down or not
 
-				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
+				if(!['waynodeDrag', 'waynodeHover'].includes(this.currentUIState)){
 					this.map.getCanvasContainer().style.cursor = this.ctrlKeyHeld ? 'crosshair' : 'default'
 					this.highlightRoute(options.feature)
 					this.currentUIState = state
@@ -277,18 +291,18 @@ export default class{
 				break
 			
 			case 'routeLeave':
-				if(!['waypointDrag', 'waypointHover'].includes(this.currentUIState)){
+				if(!['waynodeDrag', 'waynodeHover'].includes(this.currentUIState)){
 					this.setUIState('initial')
 					this.currentUIState = state
 				}
 				break
 
-			case 'waypointHover':
+			case 'waynodeHover':
 				// Change cursor to move cursor
 				// (maybe) make the route dashed to show it is about to be edited
 				// Add follower with the length of the route
 
-				if(this.currentUIState != 'waypointDrag'){
+				if(this.currentUIState != 'waynodeDrag'){
 					this.highlightRoute(options.feature)
 					this.map.getCanvasContainer().style.cursor = 'move'
 					this.currentUIState = state
@@ -296,15 +310,15 @@ export default class{
 
 				break
 
-			case 'waypointLeave':
-				if(this.currentUIState != 'waypointDrag'){
+			case 'waynodeLeave':
+				if(this.currentUIState != 'waynodeDrag'){
 					// TODO: Do we switch to the route hover at this point or not?
 					this.setUIState('initial')
 					this.currentUIState = state
 				}
 				break
 
-			case 'waypointDrag':
+			case 'waynodeDrag':
 				// Match whatver the above is
 				// Add follower with the length of the route
 				this.highlightRoute(options.feature)
@@ -312,7 +326,7 @@ export default class{
 				this.currentUIState = state
 				break
 
-			case 'waypointDragEnd':
+			case 'waynodeDragEnd':
 				this.setUIState('initial')
 				this.currentUIState = state
 				break
@@ -341,11 +355,6 @@ export default class{
 
 				break
 		}
-
-		if(currentState != this.currentUIState){
-		//	console.log(`State changed from [${currentState}] to [${this.currentUIState}]`)
-		}
-
 	}
 
 	highlightRoute = (feature) => {
@@ -398,6 +407,22 @@ export default class{
 		this.options.follower.clear()
 	}
 
+	// Create a new waypoint
+	createWaypoint = (lngLat) => {
+		this.mapData.waypoints.features.push({
+			type: 'Feature',
+			geometry: {
+				type: 'Point',
+				coordinates: lngLat
+			},
+			properties: {
+				name: `Waypoint ${this.mapData.waypoints.features.length+1}`,
+				type: 'waypoint',
+			}
+		})
+		this.regenerateMap()
+	}
+
 	// Add markers from geoJSON
 	addMarkers = () => {
 
@@ -421,13 +446,33 @@ export default class{
 			})
 		}
 
+		// Add markers for all waypoints
+		for (const feature of this.mapData.waypoints.features) {
+			// create a HTML element for each feature
+			const el = document.createElement('div')
+			el.className = 'marker-waypoint'
+			el.dataset.name = feature.properties.name
+			const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(feature.geometry.coordinates).addTo(this.map)
+			this.mapData.markers.push(newMarker)
+
+			newMarker.on('dragstart', () => {
+			})
+
+			newMarker.on('drag', () => {
+			})
+			
+			newMarker.on('dragend', () => {
+				feature.geometry.coordinates = newMarker.getLngLat().toArray()
+			})
+		}
+
 		// Add markers for extra nodes we added
 		for (const feature of this.mapData.routes.features) {
 
-			// Do we have any waypoints?
+			// Do we have any waynodes?
 			if(feature.geometry.coordinates.length > 2){
 
-				// Get just the waypoints
+				// Get just the waynodes
 				const interpoints = [...feature.geometry.coordinates]
 				interpoints.shift()
 				interpoints.pop()
@@ -435,7 +480,7 @@ export default class{
 				for (const point of interpoints) {
 					// create a HTML element for each feature
 					const el = document.createElement('div')
-					el.className = 'marker-waypoint'
+					el.className = 'marker-waynode'
 					el.dataset.routeID = feature.properties.id
 					el.dataset.pointIndex = -1
 					const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(point).addTo(this.map)
@@ -450,16 +495,16 @@ export default class{
 					// Add marker hover
 					const newElem = newMarker.getElement()
 					newElem.addEventListener('mouseenter', () => {
-						this.setUIState('waypointHover', {feature: mapboxRouteFeature})
+						this.setUIState('waynodeHover', {feature: mapboxRouteFeature})
 					})
 					newElem.addEventListener('mouseleave', () => {
-						this.setUIState('waypointLeave')
+						this.setUIState('waynodeLeave')
 					})
 
 					// When dragging begins, work out which of the nodes on the path behind it that this marker relates to
 					newMarker.on('dragstart', () => {
 
-						// Calculate which is the nearest waypoint to this marker
+						// Calculate which is the nearest waynode to this marker
 						const points = turf.featureCollection(feature.geometry.coordinates.map(coord => turf.point(coord)));
 						const nearestPoint = turf.nearestPoint(turf.point(newMarker.getLngLat().toArray()), points)
 
@@ -469,11 +514,22 @@ export default class{
 							feature.geometry.coordinates[1] === nearestPoint.geometry.coordinates[1]
 						)
 
-						this.setUIState('waypointDrag', {feature: mapboxRouteFeature})
+						this.setUIState('waynodeDrag', {feature: mapboxRouteFeature})
 					})
 
 					// Whilst dragging, update the path behind too
 					newMarker.on('drag', () => {
+
+						// Check for snap
+						for(let feature of this.mapData.waypoints.features){
+							console.log(newMarker.getLngLat().toArray(), feature.geometry.coordinates)
+							if(turf.distance(newMarker.getLngLat().toArray(), feature.geometry.coordinates, {units:"kilometers"}) <= this.featureOptions.snapDistance){
+								newMarker.setLngLat(feature.geometry.coordinates)
+								// TODO: Save reference to which waypoint we are snapped to
+								break
+							}
+						}
+
 						// Update node in the coordinates for this feature
 						feature.geometry.coordinates[newMarker.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
 
@@ -486,7 +542,7 @@ export default class{
 					})
 					
 					newMarker.on('dragend', () => {
-						this.setUIState('waypointDragEnd')
+						this.setUIState('waynodeDragEnd')
 					})
 				}
 			}

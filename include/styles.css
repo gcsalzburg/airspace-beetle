@@ -176,6 +176,7 @@ main{
 	background: white;
 	padding: 1em;
 	overflow-y: scroll;
+	height: fit-content;
 }
 
 /* *********************************************************** */
@@ -228,10 +229,51 @@ main{
 }
 
 /* *********************************************************** */
-/* Markers - waypoints                               */
+/* Markers - waypoints                                         */
 /* *********************************************************** */
 
 .marker-waypoint{
+	--marker_width: var(--dz_width);
+
+	border-radius: 50%;
+	aspect-ratio: 1;
+	box-shadow: 0px 0px 5px 0px white;
+
+	border: 2px solid var(--color-positive);
+	background: white;
+	width: 5px;
+}
+.marker-waypoint::after{
+	content: attr(data-name);
+	background: var(--color-positive);
+	color: white;
+	position: absolute;
+	left: 12px;
+	top: -6px;
+	border-radius: 3px;
+	color: white;
+	font-size: 12px;
+	font-weight: 400;
+	font-family: 'Inter', sans-serif;
+	padding: 0.1em 0.3em;
+	opacity: 0.8;
+	white-space: pre;
+	pointer-events: none;
+}
+.marker-waypoint:not(:hover)::after{
+	display: none;
+}
+.marker-waypoint:hover{
+	--marker_width: 10px;
+	border-width: 3px;
+	cursor: move;
+}
+
+/* *********************************************************** */
+/* Markers - waynodes                                          */
+/* *********************************************************** */
+
+.marker-waynode{
 	--marker_width: var(--dz_width);
 
 	border-radius: 50%;
@@ -242,7 +284,7 @@ main{
 	background: hsl(0, 0%, 100%);
 	width: calc(var(--marker_width) - (2 * var(--hover_border_width)));
 }
-.marker-waypoint:hover{
+.marker-waynode:hover{
 	--marker_width: 10px;
 	border-width: 3px;
 }
