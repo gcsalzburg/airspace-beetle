@@ -177,6 +177,7 @@ main{
 	padding: 1em;
 	overflow-y: scroll;
 	height: fit-content;
+	max-height: 70%;
 }
 
 /* *********************************************************** */

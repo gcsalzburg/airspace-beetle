@@ -1,4 +1,6 @@
 
+import Waynode from './Waynode.js'
+
 export default class{
 
 	// geoJSON for map display
@@ -154,8 +156,8 @@ export default class{
 		})
 
 		// Add click effect to route
-		this.map.on('click', 'routes', (e) => {
-			if (e.features.length > 0 && this.ctrlKeyHeld){
+		this.map.on('mousedown', 'routes', (e) => {
+			if (e.features.length > 0 && this.ctrlKeyHeld && (this.currentUIState != 'waynodeHover')){
 				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
 				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
 
@@ -448,12 +450,19 @@ export default class{
 
 		// Add markers for all waypoints
 		for (const feature of this.mapData.waypoints.features) {
+			// TODO: Merge the below into a generic DraggableWayMarker class, from which the Waynode and WayMarker are derived
 			// create a HTML element for each feature
 			const el = document.createElement('div')
 			el.className = 'marker-waypoint'
 			el.dataset.name = feature.properties.name
 			const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(feature.geometry.coordinates).addTo(this.map)
 			this.mapData.markers.push(newMarker)
+
+			el.addEventListener('click', (e) => {
+				if(this.ctrlKeyHeld){
+
+				}
+			})
 
 			newMarker.on('dragstart', () => {
 			})
@@ -478,13 +487,6 @@ export default class{
 				interpoints.pop()
 
 				for (const point of interpoints) {
-					// create a HTML element for each feature
-					const el = document.createElement('div')
-					el.className = 'marker-waynode'
-					el.dataset.routeID = feature.properties.id
-					el.dataset.pointIndex = -1
-					const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(point).addTo(this.map)
-					this.mapData.markers.push(newMarker)
 
 					// Find the mapbox feature on the map corresponding to this route
 					const mapboxRouteFeatures = this.map.querySourceFeatures('routes', {
@@ -492,58 +494,42 @@ export default class{
 					})
 					const mapboxRouteFeature = mapboxRouteFeatures[0]
 
-					// Add marker hover
-					const newElem = newMarker.getElement()
-					newElem.addEventListener('mouseenter', () => {
-						this.setUIState('waynodeHover', {feature: mapboxRouteFeature})
-					})
-					newElem.addEventListener('mouseleave', () => {
-						this.setUIState('waynodeLeave')
-					})
+					// Create new Waynode and add to the map
+					const waynode = new Waynode({
+						'className': 'marker-waynode',
+						'routeID': feature.properties.id,
+						'mapboxRouteFeature': mapboxRouteFeature,
+						'setUIState': (state, opts) => this.setUIState(state, opts),
 
-					// When dragging begins, work out which of the nodes on the path behind it that this marker relates to
-					newMarker.on('dragstart', () => {
+						onDragStart: () => {
+							waynode.setPointIndex(feature.geometry.coordinates)
+							this.setUIState('waynodeDrag', {feature: mapboxRouteFeature})
+						},
+						onDrag: () => {
+							
+							// Snap to a waypoint, if close enough
+							waynode.snapTo(this.mapData.waypoints.features, this.featureOptions.snapDistance)
+						
+							// Update node in the coordinates for this feature
+							feature.geometry.coordinates[waynode.getPointIndex()] = waynode.getLngLat()
 
-						// Calculate which is the nearest waynode to this marker
-						const points = turf.featureCollection(feature.geometry.coordinates.map(coord => turf.point(coord)));
-						const nearestPoint = turf.nearestPoint(turf.point(newMarker.getLngLat().toArray()), points)
+							// Re-render
+							feature.properties.pathDistance = turf.length(feature, 'kilometers')						
+							this.regenerateMap({markers: false})
 
-						// Save index of this point for use in a minute
-						newMarker.getElement().dataset.pointIndex = points.features.findIndex(feature => 
-							feature.geometry.coordinates[0] === nearestPoint.geometry.coordinates[0] &&
-							feature.geometry.coordinates[1] === nearestPoint.geometry.coordinates[1]
-						)
-
-						this.setUIState('waynodeDrag', {feature: mapboxRouteFeature})
-					})
-
-					// Whilst dragging, update the path behind too
-					newMarker.on('drag', () => {
-
-						// Check for snap
-						for(let feature of this.mapData.waypoints.features){
-							console.log(newMarker.getLngLat().toArray(), feature.geometry.coordinates)
-							if(turf.distance(newMarker.getLngLat().toArray(), feature.geometry.coordinates, {units:"kilometers"}) <= this.featureOptions.snapDistance){
-								newMarker.setLngLat(feature.geometry.coordinates)
-								// TODO: Save reference to which waypoint we are snapped to
-								break
-							}
+							// Show follower
+							this.setFollowerDistance(feature.properties.pathDistance)
+						},
+						onDragEnd: () => {
+							this.setUIState('waynodeDragEnd')
 						}
-
-						// Update node in the coordinates for this feature
-						feature.geometry.coordinates[newMarker.getElement().dataset.pointIndex] = newMarker.getLngLat().toArray()
-
-						// Re-render
-						feature.properties.pathDistance = turf.length(feature, 'kilometers')						
-						this.regenerateMap({markers: false})
-
-						// Show follower
-						this.setFollowerDistance(feature.properties.pathDistance)
 					})
-					
-					newMarker.on('dragend', () => {
-						this.setUIState('waynodeDragEnd')
-					})
+
+					// Add to the map
+					waynode.addToMap(this.map, point)
+
+					// Save the waynode in list of markers
+					this.mapData.markers.push(waynode)
 				}
 			}
 		}
