@@ -522,6 +522,19 @@ export default class{
 						},
 						onDragEnd: () => {
 							this.setUIState('waynodeDragEnd')
+						},
+						onDelete: (waynode) => {
+							// Find the correct route for this waynode
+							const route = this.mapData.routes.features.find(route => route.properties.id == waynode.getRouteID())
+
+							// Remove the correct node
+							route.geometry.coordinates.splice(route.geometry.coordinates.findIndex(coord => (coord[0] == waynode.getLngLat()[0]) && (coord[1] == waynode.getLngLat()[1])), 1)
+
+							// Find and remove this node from the list of markers
+							this.mapData.markers.splice(this.mapData.markers.findIndex(item => item.uniqueID == waynode.getID()), 1)
+							
+							// Regen map
+							this.regenerateMap()
 						}
 					})
 
