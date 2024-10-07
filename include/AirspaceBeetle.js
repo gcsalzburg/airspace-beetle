@@ -17,7 +17,8 @@ export default class{
 			type: "FeatureCollection",
 			features: []					
 		},
-		markers: []
+		markers: [],
+		trusts: []
 	}
 
 	// Mapbox objects
@@ -105,7 +106,8 @@ export default class{
 				'line-cap': 'round'
 			},
 			'paint': {
-				'line-color': `#ffc03a`,
+				// 'line-color': `#ffc03a`,
+				'line-color': ['get', 'color'],
 				'line-width': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
@@ -215,6 +217,9 @@ export default class{
 		}
 			
 		if(_options.routes){
+			// Delete out old routes
+			this.buildRoutes()
+
 			// Reapply the new routes
 			this.map.on('sourcedata', this.onSourceData)
 			this.map.getSource('routes').setData(this.mapData.routes)
@@ -247,22 +252,11 @@ export default class{
 
 		this.options.dom.locationsList.innerHTML = ""
 
-		// Calculate unique list of trusts
-		const unique_trusts = this.mapData.locations.features.map(feature => feature.properties.trust).filter(((value, index, array) => array.indexOf(value) === index))
-		const trusts = []
-
-		// Create array of trusts
-		for(let trust of unique_trusts){
-			trusts.push({
-				name: trust,
-				numLocations: this.mapData.locations.features.filter(location => location.properties.trust == trust).length,
-				color: `hsl(${unique_trusts.indexOf(trust)*39}, 72%, 53%)`
-			})
-		}
-		trusts.sort((a,b) => a.numLocations - b.numLocations).reverse()
+		// Sort list of Trusts
+		this.mapData.trusts.sort((a,b) => a.numLocations - b.numLocations).reverse()
 
 		// Print the list
-		for(let trust of trusts){
+		for(let trust of this.mapData.trusts){
 			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${trust.name}"><span class="num" style="background-color:${trust.color}">${trust.numLocations}</span> ${trust.name}</div>`)
 		}
 	}
@@ -463,6 +457,7 @@ export default class{
 			el.dataset.name = feature.properties.name
 			el.dataset.type = feature.properties.type
 			el.dataset.trust = feature.properties.trust
+			el.style.background = this.mapData.trusts.find(trust => trust.name == feature.properties.trust).color
 			if(feature.properties.isHub){
 				el.classList.add('is_hub')
 			}
@@ -579,6 +574,72 @@ export default class{
 		}
 	}
 
+	buildRoutes = () => {
+
+		for (let hubLocation of this.mapData.locations.features) {
+			if(hubLocation.properties.isHub){
+				// Only build routes to/from the hubs
+				const trust = hubLocation.properties.trust
+				const hubCoords = hubLocation.geometry.coordinates
+
+				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust)
+
+				for(let node of nodes){
+					const nodeCoords = node.geometry.coordinates
+					const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
+					const newRoute = {
+						type: "Feature",
+						properties: {
+							id: 				Math.random()*10000,
+							source: 			hubLocation.properties.name,
+							destination: 	node.properties.name,
+							crowDistance: 	distance,
+							pathDistance: 	distance,
+							trust:			trust,
+							color: 			this.mapData.trusts.find(t => t.name == trust).color
+						},
+						geometry: {
+							type: 'LineString',
+							coordinates: [
+								hubCoords,
+								nodeCoords,
+							]
+						}
+					}
+					this.mapData.routes.features.push(newRoute)
+				}
+			}
+		}
+	/*
+			if(this.addLocation(parts[0], source_coords, rowNum)){
+				// Generate a route for this line
+				const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
+				const newRoute = {
+					type: "Feature",
+					properties: {
+						id: Math.random()*10000,
+						source: parts[0],
+						destination: parts[3],
+						crowDistance: distance,
+						pathDistance: distance
+					},
+					geometry: {
+						type: 'LineString',
+						coordinates: [
+							source_coords,
+							destination_coords,
+						]
+					}
+				}
+				for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
+					// TODO make this more intelligent, with an axis to roll out the places over time
+					newRoute.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
+				}
+				this.mapData.routes.features.push(newRoute)
+				rowSuccessCount++
+			}*/
+	}
+
 	// Helper function to do first call to set drone range once the route data has been loaded onto the map
 	onSourceData = (e) => {
 		if (e.isSourceLoaded && e.sourceDataType != 'metadata'){ // I worked out these parameter checks by inspection and guesswork, may not be stable!
@@ -632,6 +693,9 @@ export default class{
 				continue
 			}
 
+			// Update Trusts list
+			this.addTrust(parts[4])
+
 			// Save coords
 			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
 
@@ -642,35 +706,6 @@ export default class{
 				isHub: parts[5]=='y'
 			})
 			rowSuccessCount++
-
-			/*
-			if(this.addLocation(parts[0], source_coords, rowNum)){
-				// Generate a route for this line
-				const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
-				const newRoute = {
-					type: "Feature",
-					properties: {
-						id: Math.random()*10000,
-						source: parts[0],
-						destination: parts[3],
-						crowDistance: distance,
-						pathDistance: distance
-					},
-					geometry: {
-						type: 'LineString',
-						coordinates: [
-							source_coords,
-							destination_coords,
-						]
-					}
-				}
-				for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
-					// TODO make this more intelligent, with an axis to roll out the places over time
-					newRoute.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
-				}
-				this.mapData.routes.features.push(newRoute)
-				rowSuccessCount++
-			} */
 		}
 
 		if(rowSuccessCount > 0){
@@ -691,6 +726,20 @@ export default class{
 		this.options.dom.importWarning.classList.add('show')
 
 		this.options.dom.importWarning.querySelector('.warning-details').insertAdjacentHTML('beforeend', `<li>Row ${rowNum}: ${errorMessage}<br><i>${rowContents}</i>`)
+	}
+
+	// Add a new Trust to the list
+	addTrust = (name) => {
+		const existingTrust = this.findObjectByProperty(this.mapData.trusts, "name", name)
+		if(!existingTrust){
+			this.mapData.trusts.push({
+				name: name,
+				numLocations: 1,
+				color: `hsl(${this.mapData.trusts.length*39}, 72%, 53%)`
+			})
+		}else{
+			existingTrust.numLocations = existingTrust.numLocations + 1
+		}
 	}
 
 	// Add a location to the list
