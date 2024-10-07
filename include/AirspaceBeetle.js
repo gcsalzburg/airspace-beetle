@@ -221,9 +221,12 @@ export default class{
 		}
 
 		if(_options.metadata){
+			// Create list of all Trust networks
+			this.createNetworksList()
+
 			// Display list of all locations, routes etc
 			this.createRoutesData()
-			this.createLocationsList()
+		//	this.createLocationsList()
 		}
 	}
 
@@ -238,6 +241,30 @@ export default class{
 		// Set bounds of range slider
 		const sliderMax = Math.ceil(maxRouteLength/5)*5
 		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
+	}
+
+	createNetworksList = () => {
+
+		this.options.dom.locationsList.innerHTML = ""
+
+		// Calculate unique list of trusts
+		const unique_trusts = this.mapData.locations.features.map(feature => feature.properties.trust).filter(((value, index, array) => array.indexOf(value) === index))
+		const trusts = []
+
+		// Create array of trusts
+		for(let trust of unique_trusts){
+			trusts.push({
+				name: trust,
+				numLocations: this.mapData.locations.features.filter(location => location.properties.trust == trust).length,
+				color: `hsl(${unique_trusts.indexOf(trust)*39}, 72%, 53%)`
+			})
+		}
+		trusts.sort((a,b) => a.numLocations - b.numLocations).reverse()
+
+		// Print the list
+		for(let trust of trusts){
+			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${trust.name}"><span class="num" style="background-color:${trust.color}">${trust.numLocations}</span> ${trust.name}</div>`)
+		}
 	}
 
 	createLocationsList = () => {
@@ -434,7 +461,11 @@ export default class{
 			const el = document.createElement('div')
 			el.className = 'marker'
 			el.dataset.name = feature.properties.name
-			el.dataset.routes = feature.properties.routes
+			el.dataset.type = feature.properties.type
+			el.dataset.trust = feature.properties.trust
+			if(feature.properties.isHub){
+				el.classList.add('is_hub')
+			}
 			const newMarker = new mapboxgl.Marker(el).setLngLat(feature.geometry.coordinates).addTo(this.map)
 			this.mapData.markers.push(newMarker)
 
@@ -565,7 +596,7 @@ export default class{
 	// These keep the CSV and map display in sync
 
 	// Take an updated CSV from the input box, and convert it to geoJSON and render
-	// Expected format: source,lat,lng,destination,lat,lng,metadata1,metadata2,metadata3,etc..
+	// Expected format: Site name,Latitude,Longitude,Type,Trust,Is hub?
 	csvIsUpdated = (csv) => {
 
 		// Trim incoming CSV
@@ -592,21 +623,28 @@ export default class{
 			const parts = row.split(',')
 
 			// Few basic data integrity checks
-			if(parts.length < 6){
+			if(parts.length < 3){
 				this.addImportError(rowNum, 'Row too short', row)
 				continue
 			}
-			if(isNaN(parts[1]) || isNaN(parts[2]) || isNaN(parts[4]) || isNaN(parts[5])){
-				this.addImportError(rowNum, 'Coords not a number', row)
+			if(isNaN(parts[1]) || isNaN(parts[2])){
+				this.addImportError(rowNum, `Lat/lng coords don't seem to be number`, row)
 				continue
 			}
 
 			// Save coords
-			const source_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
-			const destination_coords = [parseFloat(parts[5]), parseFloat(parts[4])]
+			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
 
 			// Save the location if it is a unique location
-			if(this.addLocation(parts[0], source_coords, rowNum) && this.addLocation(parts[3], destination_coords, rowNum)){
+			this.addLocation(parts[0], location_coords, rowNum, {
+				type: parts[3],
+				trust: parts[4],
+				isHub: parts[5]=='y'
+			})
+			rowSuccessCount++
+
+			/*
+			if(this.addLocation(parts[0], source_coords, rowNum)){
 				// Generate a route for this line
 				const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
 				const newRoute = {
@@ -632,14 +670,14 @@ export default class{
 				}
 				this.mapData.routes.features.push(newRoute)
 				rowSuccessCount++
-			}
+			} */
 		}
 
 		if(rowSuccessCount > 0){
 			this.options.dom.importSuccess.querySelector('.num-rows').innerHTML = rowSuccessCount
 			this.options.dom.importSuccess.classList.add('show')
 		}
-
+		
 		// Add the nodes as markers
 		this.regenerateMap()
 	}
@@ -656,20 +694,21 @@ export default class{
 	}
 
 	// Add a location to the list
-	addLocation = (name, coords, rowNum) => {
+	addLocation = (name, coords, rowNum, metadata = {}) => {
 		const existingLocation = this.findObjectByProperty(this.mapData.locations.features, "properties.name", name)
 		if(!existingLocation){
+			const	properties = {
+				name: name,
+				...metadata
+			}
+
 			this.mapData.locations.features.push({
 				type: 'Feature',
 				geometry: {
 					type: 'Point',
 					coordinates: coords
 				},
-				properties: {
-					name: name,
-					numRoutes: 1
-					// TODO: Add a property called "earliest date" or something
-				}
+				properties: properties
 			})
 			return true
 		}else{
