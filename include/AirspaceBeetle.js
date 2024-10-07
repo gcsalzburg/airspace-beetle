@@ -122,7 +122,7 @@ export default class{
 				],
 				'line-opacity': [
 					'case', 
-					['boolean', ['feature-state', 'withinDroneRange'], false],
+					['boolean', ['feature-state', 'isTrust'], ['feature-state', 'withinDroneRange'], false],
 					1,
 					0
 				]
@@ -189,13 +189,40 @@ export default class{
 		this.options.dom.locationsList.addEventListener('mousemove', (e) => {
 			const location = e.target.closest('.location')
 			if(location){
-				this.setUIState('locationHover', {location: location.dataset.name})
+
+				// Set all routes to false
+				for(let feature of this.mapData.routes.features){
+					this.map.setFeatureState(
+						{source: 'routes', id: feature.properties.id},
+						{isTrust: false}
+					)
+				}
+				// Filter routes by which ones are within range
+				const validRoutes = this.map.querySourceFeatures('routes', {
+					sourceLayer: 'routes',
+					filter: ['==', 'trust', location.dataset.name]
+				})
+
+				// For each valid route, set the feature as being within range
+				validRoutes.forEach((feature) => {
+					this.map.setFeatureState(
+						{source: 'routes', id: feature.id},
+						{isTrust: true}
+					)
+				})
+
 			}else{
-				this.setUIState('initial')
+				this.map.setFeatureState(
+					{source: 'routes', id: feature.properties.id},
+					{isTrust: false}
+				)
 			}
 		})
 		this.options.dom.locationsList.addEventListener('mouseleave', (e) => {
-			this.setUIState('initial')
+			this.map.setFeatureState(
+				{source: 'routes', id: feature.properties.id},
+				{isTrust: false}
+			)
 		})
 	}
 
