@@ -122,7 +122,8 @@ export default class{
 				],
 				'line-opacity': [
 					'case', 
-					['boolean', ['feature-state', 'isTrust'], ['feature-state', 'withinDroneRange'], false],
+				//	['boolean', ['feature-state', 'isTrust'], ['feature-state', 'withinDroneRange'], false],
+					['boolean', ['feature-state', 'showRoute'], false],
 					1,
 					0
 				]
@@ -194,7 +195,7 @@ export default class{
 				for(let feature of this.mapData.routes.features){
 					this.map.setFeatureState(
 						{source: 'routes', id: feature.properties.id},
-						{isTrust: false}
+						{showRoute: false}
 					)
 				}
 				// Filter routes by which ones are within range
@@ -207,22 +208,20 @@ export default class{
 				validRoutes.forEach((feature) => {
 					this.map.setFeatureState(
 						{source: 'routes', id: feature.id},
-						{isTrust: true}
+						{showRoute: true}
 					)
 				})
 
 			}else{
 				this.map.setFeatureState(
 					{source: 'routes', id: feature.properties.id},
-					{isTrust: false}
+					{showRoute: false}
 				)
 			}
 		})
 		this.options.dom.locationsList.addEventListener('mouseleave', (e) => {
-			this.map.setFeatureState(
-				{source: 'routes', id: feature.properties.id},
-				{isTrust: false}
-			)
+			// Re-draw visibility based on the drone range
+			this.setDroneRange(this.featureOptions.droneRange)
 		})
 	}
 
@@ -812,7 +811,7 @@ export default class{
 		for(let feature of this.mapData.routes.features){
 			this.map.setFeatureState(
 				{source: 'routes', id: feature.properties.id},
-				{withinDroneRange: false}
+				{showRoute: false}
 			)
 		}
 		// Filter routes by which ones are within range
@@ -828,7 +827,7 @@ export default class{
 		validRoutes.forEach((feature) => {
 			this.map.setFeatureState(
 				{source: 'routes', id: feature.id},
-				{withinDroneRange: true}
+				{showRoute: true}
 			)
 		})
 	}
