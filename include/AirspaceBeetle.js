@@ -108,6 +108,12 @@ export default class{
 			'paint': {
 				// 'line-color': `#ffc03a`,
 				'line-color': ['get', 'color'],
+				
+				// TODO - find out why it doesn't show the lines with dasharray length of 0
+         /*	 "line-dasharray": [
+					0.5,
+					["match", ["get", "nodeType"], "Other", 1.5, 0]
+				 ],*/
 				'line-width': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
@@ -122,9 +128,8 @@ export default class{
 				],
 				'line-opacity': [
 					'case', 
-				//	['boolean', ['feature-state', 'isTrust'], ['feature-state', 'withinDroneRange'], false],
 					['boolean', ['feature-state', 'showRoute'], false],
-					1,
+					["match", ["get", "nodeType"], "Other", 0.6, 1],
 					0
 				]
 			}
@@ -626,6 +631,7 @@ export default class{
 							crowDistance: 	distance,
 							pathDistance: 	distance,
 							trust:			trust,
+							nodeType:		node.properties.type,
 							color: 			this.mapData.trusts.find(t => t.name == trust).color
 						},
 						geometry: {
