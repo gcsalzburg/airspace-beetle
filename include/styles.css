@@ -186,6 +186,7 @@ main{
 
 .marker{
 	--marker_width: var(--dz_width);
+	--tooltip-background-color: var(--color-primary); /* Will be overriden in JS on this element */
 
 	background: var(--color-primary);
 	width: var(--marker_width);
@@ -196,7 +197,7 @@ main{
 }
 .marker::after{
 	content: attr(data-name);
-	background: var(--color-primary);
+	background: var(--tooltip-background-color);
 	color: white;
 	position: absolute;
 	left: 12px;
@@ -534,7 +535,7 @@ body:not([data-show-type-colours='true']) .type-colours{display:none;}
 	left: 0px;
 	max-width: 350px;
 	justify-content: center;
-	z-index: 5000;
+	z-index: 20000;
 }
 .mouse-follower span{
 	display: block;

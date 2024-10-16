@@ -483,7 +483,10 @@ export default class{
 			el.dataset.name = feature.properties.name
 			el.dataset.type = feature.properties.type
 			el.dataset.trust = feature.properties.trust
-			el.style.background = this.mapData.trusts.find(trust => trust.name == feature.properties.trust).color
+
+			const color = this.mapData.trusts.find(trust => trust.name == feature.properties.trust).color
+			el.style = `--tooltip-background-color: ${color}`
+			el.style.background = color
 			if(feature.properties.isHub){
 				el.classList.add('is_hub')
 			}
