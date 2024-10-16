@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 		follower: new Follower({
 			styles: {
-				route: '#ffc03a'
+				route: '#232223'
 			}
 		}),
 

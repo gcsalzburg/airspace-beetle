@@ -479,8 +479,9 @@ export default class{
 		for (const feature of this.mapData.locations.features) {
 			// create a HTML element for each feature
 			const el = document.createElement('div')
+			el.insertAdjacentHTML('beforeend',`<div class="label"><span class="line1">${feature.properties.name}</span><span class="line2">${feature.properties.type}</span></div>`)
 			el.className = 'marker'
-			el.dataset.name = feature.properties.name
+			el.dataset.name = `${feature.properties.name}`//<br>${feature.properties.type}`
 			el.dataset.type = feature.properties.type
 			el.dataset.trust = feature.properties.trust
 
