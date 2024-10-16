@@ -718,6 +718,9 @@ export default class{
 			if(isNaN(parts[1]) || isNaN(parts[2])){
 				this.addImportError(rowNum, `Lat/lng coords don't seem to be number`, row)
 				continue
+			}else if(parts[1].length == 0 || parts[2].length == 0){
+				this.addImportError(rowNum, `Lat/lng coords missing`, row)
+				continue
 			}
 
 			// Update Trusts list

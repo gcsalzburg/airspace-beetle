@@ -447,7 +447,7 @@ h3{
 .drone-range-wrapper{
 	display: flex;
 	margin: 0.8em 0;
-	align-items: flex-start;
+	align-items: center;
 }
 .drone-range-wrapper .slider{
 	margin: 0 0.5em;
