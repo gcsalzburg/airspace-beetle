@@ -201,7 +201,7 @@ main{
 	position: absolute;
 	left: 12px;
 	top: -6px;
-	border-radius: 3px;
+	border-radius: 4px;
 	color: white;
 	font-size: 12px;
 	font-weight: 400;
@@ -210,9 +210,13 @@ main{
 	opacity: 0.8;
 	white-space: pre;
 	pointer-events: none;
+	border: 1px solid white;
 }
 .marker:not(.show-label)::after{
 	display: none;
+}
+.marker.show-label{
+	z-index: 10000;
 }
 
 [data-show-type-colours='true'] .marker{
@@ -227,6 +231,10 @@ main{
 
 .marker.is_hub {
 	--marker_width: var(--hub_width);
+}
+.marker.is_hub::after{
+	left: 20px;
+	top: -4px;
 }
 
 /* *********************************************************** */
