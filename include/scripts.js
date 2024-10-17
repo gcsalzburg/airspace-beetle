@@ -28,7 +28,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 			lineNumbers: document.querySelector('.line-numbers'),
 			importSuccess: document.querySelector('.import-success'),
 			importWarning: document.querySelector('.import-warning'),
-			droneRangeSlider: document.querySelector('.drone-range')
+			droneRangeSlider: document.querySelector('.drone-range'),
+			weightsSliders: document.querySelector('.weights-sliders')
 		},
 		
 		onReady: () => {
@@ -57,10 +58,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// **********************************************************
 	// Drone range slider
 
-	const droneRangeValue = document.querySelector('.drone-range-wrapper .value')
-
 	document.querySelector('.drone-range-wrapper input[type="range"]').addEventListener("input", (e) => {
-		droneRangeValue.textContent = `${e.target.value} km`
+		document.querySelector('.drone-range-wrapper .value').textContent = `${e.target.value} km`
 		myNetwork.setDroneRange(e.target.value)
 	})
 
@@ -94,7 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// **********************************************************
 	// Handle buttons
 
-	document.querySelectorAll('.panel-nav a, .options a, .code-container a').forEach(link => link.addEventListener('click', async (e) => {
+	document.querySelectorAll('.panel-nav a, .options a, .code-container a, .data-stats a').forEach(link => link.addEventListener('click', async (e) => {
 		e.preventDefault()
 
 		// Get the hash, to work out what sort of switch it is
@@ -132,6 +131,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 				a.download = `airspace-beetle-${Date.now()}.kml`
 				a.click()
 				URL.revokeObjectURL(url)
+				break
+
+			case 'show-centroids':
+				myNetwork.toggleCentroids(true)
+				document.body.dataset.showCentroids = 'true'
+				break
+			case 'hide-centroids':
+				myNetwork.toggleCentroids(false)
+				document.body.dataset.showCentroids = 'false'
 				break
 		}
 	}))

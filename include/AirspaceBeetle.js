@@ -1,5 +1,6 @@
 
 import Waynode from './Waynode.js'
+import Centroid from './Centroid.js'
 
 export default class{
 
@@ -17,8 +18,10 @@ export default class{
 			type: "FeatureCollection",
 			features: []					
 		},
+		centroids: [],
 		markers: [],
-		trusts: []
+		trusts: [],
+		types: []
 	}
 
 	// Mapbox objects
@@ -29,8 +32,12 @@ export default class{
 
 	// Feature options
 	featureOptions = {
-		droneRange: 20,
+		droneRange: 10,
 		snapDistance: 0.3, // kilometers
+		weights: {
+			hospitals: 1,
+			others: 1
+		}
 	}
  
 	// Default options are below
@@ -118,7 +125,7 @@ export default class{
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
 					7,
-					4
+					["match", ["get", "nodeType"], "Other", 2, 5]
 				],
 				'line-blur': [
 					'case',
@@ -258,15 +265,18 @@ export default class{
 
 		if(_options.metadata){
 			// Create list of all Trust networks
-			this.createNetworksList()
+			this.createTrustsList()
 
-			// Display list of all locations, routes etc
-			this.createRoutesData()
-		//	this.createLocationsList()
+			this.createTypesList()
+
+			this.setDroneRangeSliderBounds()
 		}
+
+		// Show centroids
+		this.createCentroids()
 	}
 
-	createRoutesData = () => {
+	setDroneRangeSliderBounds = () => {
 		this.options.dom.routesData.querySelector('.num-routes').innerHTML = this.mapData.routes.features.length
 
 		// Get min/max route length
@@ -279,7 +289,7 @@ export default class{
 		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
 	}
 
-	createNetworksList = () => {
+	createTrustsList = () => {
 
 		this.options.dom.locationsList.innerHTML = ""
 
@@ -292,13 +302,47 @@ export default class{
 		}
 	}
 
-	createLocationsList = () => {
-		this.options.dom.locationsList.innerHTML = ""
-		const locationsList = this.mapData.locations.features.map(location => ({name: location.properties.name, numRoutes: location.properties.numRoutes}))
-		locationsList.sort((a,b) => a.numRoutes - b.numRoutes).reverse()
-		locationsList.forEach(item => {
-			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${item.name}"><span class="num">${item.numRoutes}</span> ${item.name}</div>`)
-		})
+	createTypesList = () => {
+
+		this.options.dom.weightsSliders.innerHTML = ""
+
+		// Sort list of types alphabetically
+		this.mapData.types.sort((a,b) => a.name - b.name)
+
+		for(let type of this.mapData.types){
+			const safeName = type.name.replace(/\s/g, "")
+			const sliderHTML = `<div class="slider-wrapper ${safeName}-weight-wrapper">
+									<label for="${safeName}-weight">${type.name}:</label>
+									<span class="slider">
+										<input type="range" class="${safeName}-weight" id="${safeName}-weight" name="${safeName}-weight" min="1" max="100" step="1" value="1" />
+									</span>
+									<span class="value">1</span>
+								</div>`
+			this.options.dom.weightsSliders.insertAdjacentHTML('beforeend',sliderHTML)
+
+			document.querySelector(`.${safeName}-weight-wrapper input[type="range"]`).addEventListener("input", (e) => {
+				document.querySelector(`.${safeName}-weight-wrapper .value`).textContent = `${e.target.value}`
+				this.setCentroidWeights(type.name,e.target.value)
+			})
+		}
+	}
+
+	createCentroids = () => {
+		for(let trust of this.mapData.trusts){
+			const hubLocation = this.mapData.locations.features.find(location => location.properties.isHub && location.properties.trust == trust.name)
+			
+			const centroid = new Centroid({
+				map: this.map,
+				trust: trust.name,
+				color: trust.color,
+				locations: this.mapData.locations.features.filter(location => location.properties.trust == trust.name),
+				weights: [],
+				hub: hubLocation.geometry.coordinates,
+				droneRange: this.featureOptions.droneRange
+			})
+
+			this.mapData.centroids.push(centroid)
+		}
 	}
 
 	setUIState = (state, options = {}) => {
@@ -732,17 +776,22 @@ export default class{
 				continue
 			}
 
+			// Save coords
+			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
+
+			const isHub = (parts[5]=='y')
+
 			// Update Trusts list
 			this.addTrust(parts[4])
 
-			// Save coords
-			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
+			// Update types list
+			this.addType(parts[3])
 
 			// Save the location if it is a unique location
 			this.addLocation(parts[0], location_coords, rowNum, {
 				type: parts[3],
 				trust: parts[4],
-				isHub: parts[5]=='y'
+				isHub: isHub
 			})
 			rowSuccessCount++
 		}
@@ -781,12 +830,26 @@ export default class{
 		}
 	}
 
+	// Add a new type to the list
+	addType = (name) => {
+		const existingType = this.findObjectByProperty(this.mapData.types, "name", name)
+		if(!existingType){
+			this.mapData.types.push({
+				name: name,
+				numLocations: 1
+			})
+		}else{
+			existingType.numLocations = existingType.numLocations + 1
+		}
+	}
+
 	// Add a location to the list
 	addLocation = (name, coords, rowNum, metadata = {}) => {
 		const existingLocation = this.findObjectByProperty(this.mapData.locations.features, "properties.name", name)
 		if(!existingLocation){
 			const	properties = {
 				name: name,
+				centroidWeight: 1,
 				...metadata
 			}
 
@@ -840,6 +903,37 @@ export default class{
 				{showRoute: true}
 			)
 		})
+
+		// Update this info in the centroids too
+		for(let centroid of this.mapData.centroids){
+			centroid.setDroneRange(range)
+		}
+	}
+
+	// **********************************************************
+	// Centroids
+
+	setCentroidWeights = (type, weight) => {
+		for(let location of this.mapData.locations.features){
+			if(location.properties.type == type){
+				console.log('found one!')
+				location.properties.centroidWeight = weight
+			}
+		}
+
+		this.setCentroidLocations()
+	}
+
+	setCentroidLocations = () => {
+		for(let centroid of this.mapData.centroids){
+			centroid.setLocations(this.mapData.locations.features.filter(location => location.properties.trust == centroid.getTrust()))
+		}
+	}
+
+	toggleCentroids = (isShow = false) => {
+		for(let centroid of this.mapData.centroids){
+			isShow ? centroid.show() : centroid.hide()
+		}
 	}
 
 	// **********************************************************
