@@ -266,6 +266,13 @@ main{
 	top: -6px;
 }
 
+.marker.isExclude{
+	background: hsl(0, 0%, 75%) !important;
+}
+.marker.isExclude::after{
+	background: hsl(0, 0%, 75%) !important;
+}
+
 /* *********************************************************** */
 /* Markers - waypoints                                         */
 /* *********************************************************** */

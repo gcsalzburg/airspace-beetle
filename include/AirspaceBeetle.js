@@ -85,6 +85,7 @@ export default class{
 			style: this.options.mapbox_style,
 			center: [this.options.mapbox_view.centre.lng, this.options.mapbox_view.centre.lat],
 			zoom: this.options.mapbox_view.zoom,
+			boxZoom: false
 		})
 
 		// Once the map has loaded
@@ -125,7 +126,7 @@ export default class{
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
 					7,
-					["match", ["get", "nodeType"], "Other", 2, 5]
+					["match", ["get", "nodeType"], "Hospital", 5, 2]
 				],
 				'line-blur': [
 					'case',
@@ -136,7 +137,7 @@ export default class{
 				'line-opacity': [
 					'case', 
 					['boolean', ['feature-state', 'showRoute'], false],
-					["match", ["get", "nodeType"], "Other", 0.6, 1],
+					["match", ["get", "nodeType"], "Hospital", 1, 0.6],
 					0
 				]
 			}
@@ -224,11 +225,6 @@ export default class{
 					)
 				})
 
-			}else{
-				this.map.setFeatureState(
-					{source: 'routes', id: feature.properties.id},
-					{showRoute: false}
-				)
 			}
 		})
 		this.options.dom.locationsList.addEventListener('mouseleave', (e) => {
@@ -242,7 +238,8 @@ export default class{
 		const _options = {...{
 			markers: true,
 			routes: true,
-			metadata: true
+			metadata: true,
+			centroids: true
 		}, ...options}
 	
 		if(_options.markers){
@@ -256,6 +253,9 @@ export default class{
 			
 		if(_options.routes){
 			// Delete out old routes
+			this.mapData.routes.features = []
+
+			// Build routes again
 			this.buildRoutes()
 
 			// Reapply the new routes
@@ -272,8 +272,11 @@ export default class{
 			this.setDroneRangeSliderBounds()
 		}
 
-		// Show centroids
-		this.createCentroids()
+		if(_options.centroids){
+			// Show centroids
+			this.createCentroids()
+		}
+
 	}
 
 	setDroneRangeSliderBounds = () => {
@@ -293,7 +296,13 @@ export default class{
 
 		this.options.dom.locationsList.innerHTML = ""
 
+		// Recalculate list
+		for(let trust of this.mapData.trusts){
+			trust.numLocations = this.mapData.locations.features.filter(location => location.properties.trust == trust.name && !location.properties.exclude).length
+		}
+
 		// Sort list of Trusts
+		this.mapData.trusts.sort((a,b) => b.name.localeCompare(a.name))
 		this.mapData.trusts.sort((a,b) => a.numLocations - b.numLocations).reverse()
 
 		// Print the list
@@ -543,13 +552,43 @@ export default class{
 			const newMarker = new mapboxgl.Marker(el).setLngLat(feature.geometry.coordinates).addTo(this.map)
 			this.mapData.markers.push(newMarker)
 
-			// Add marker hover
-			const newElem = newMarker.getElement()
-			newElem.addEventListener('mouseover', () => {
+			// Add marker interactions
+			el.addEventListener('mouseover', () => {
 				this.setUIState('locationHover', {location:feature.properties.name})
 			})
-			newElem.addEventListener('mouseleave', () => {
+			el.addEventListener('mouseleave', () => {
 				this.setUIState('locationLeave')
+			})
+			el.addEventListener('click', (e) => {
+
+				if(!feature.properties.isHub){
+
+					if(e.shiftKey){
+
+						// Turning into the hub!
+						const currentHub = this.mapData.locations.features.find(location => location.properties.trust == feature.properties.trust && location.properties.isHub)
+						currentHub.properties.isHub = false
+						feature.properties.isHub = true
+						this.regenerateMap({
+							centroids: false
+						})
+						this.setCentroidLocations()
+
+					}else{
+
+						// Toggling to exclude it
+						feature.properties.exclude = !feature.properties.exclude
+						el.classList.toggle('isExclude', feature.properties.exclude)
+
+						this.regenerateMap({
+							markers: false,
+							centroids: false
+						})
+						this.setCentroidLocations()
+
+					}
+
+				}
 			})
 		}
 
@@ -620,7 +659,7 @@ export default class{
 
 							// Re-render
 							feature.properties.pathDistance = turf.length(feature, 'kilometers')						
-							this.regenerateMap({markers: false})
+							this.regenerateMap({markers: false, centroids: false})
 
 							// Show follower
 							this.setFollowerDistance(feature.properties.pathDistance)
@@ -655,13 +694,13 @@ export default class{
 
 	buildRoutes = () => {
 
-		for (let hubLocation of this.mapData.locations.features) {
+		for (const hubLocation of this.mapData.locations.features) {
 			if(hubLocation.properties.isHub){
 				// Only build routes to/from the hubs
 				const trust = hubLocation.properties.trust
 				const hubCoords = hubLocation.geometry.coordinates
 
-				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust)
+				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && !location.properties.exclude)
 
 				for(let node of nodes){
 					const nodeCoords = node.geometry.coordinates
@@ -690,34 +729,6 @@ export default class{
 				}
 			}
 		}
-	/*
-			if(this.addLocation(parts[0], source_coords, rowNum)){
-				// Generate a route for this line
-				const distance = turf.distance(source_coords, destination_coords, {units: 'kilometers'})
-				const newRoute = {
-					type: "Feature",
-					properties: {
-						id: Math.random()*10000,
-						source: parts[0],
-						destination: parts[3],
-						crowDistance: distance,
-						pathDistance: distance
-					},
-					geometry: {
-						type: 'LineString',
-						coordinates: [
-							source_coords,
-							destination_coords,
-						]
-					}
-				}
-				for(let metadataCnt=0; metadataCnt<(parts.length-6); metadataCnt++){
-					// TODO make this more intelligent, with an axis to roll out the places over time
-					newRoute.properties[`meta${metadataCnt}`] = parts[6+metadataCnt]
-				}
-				this.mapData.routes.features.push(newRoute)
-				rowSuccessCount++
-			}*/
 	}
 
 	// Helper function to do first call to set drone range once the route data has been loaded onto the map
@@ -850,6 +861,7 @@ export default class{
 			const	properties = {
 				name: name,
 				centroidWeight: 1,
+				exclude: false,
 				...metadata
 			}
 
@@ -916,7 +928,6 @@ export default class{
 	setCentroidWeights = (type, weight) => {
 		for(let location of this.mapData.locations.features){
 			if(location.properties.type == type){
-				console.log('found one!')
 				location.properties.centroidWeight = weight
 			}
 		}
@@ -926,7 +937,7 @@ export default class{
 
 	setCentroidLocations = () => {
 		for(let centroid of this.mapData.centroids){
-			centroid.setLocations(this.mapData.locations.features.filter(location => location.properties.trust == centroid.getTrust()))
+			centroid.setLocations(this.mapData.locations.features.filter(location => location.properties.trust == centroid.getTrust() && !location.properties.exclude))
 		}
 	}
 
