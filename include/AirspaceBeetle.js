@@ -899,6 +899,7 @@ export default class{
 				{showRoute: false}
 			)
 		}
+		// TODO - get rid of all this and just put the > logic in the paint bit itself!
 		// Filter routes by which ones are within range
 		const validRoutes = this.map.querySourceFeatures('routes', {
 			sourceLayer: 'routes',
