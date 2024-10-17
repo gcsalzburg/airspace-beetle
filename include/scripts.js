@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 		mapbox_token: 'pk.eyJ1IjoiZ2NzYWx6YnVyZyIsImEiOiJjam1pNm5uZmcwMXNyM3FtNGp6dTY3MGxsIn0.PmLPkI3T8UxjEIPnz7fxEA',
 		mapbox_style: 'mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw',
+	//	mapbox_syle: 'mapbox://styles/mapbox/light-monochrome',
 
 		dom: {
 			mapbox: document.querySelector('.map'),
