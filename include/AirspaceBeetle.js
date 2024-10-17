@@ -285,10 +285,11 @@ export default class{
 		// Get min/max route length
 		const maxRouteLength = this.mapData.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
 		const minRouteLength = this.mapData.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity)
+
 		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(minRouteLength*10)/10} - ${Math.round(maxRouteLength*10)/10} km)`
 
 		// Set bounds of range slider
-		const sliderMax = Math.ceil(maxRouteLength/5)*5
+		const sliderMax = Math.min(Math.ceil(maxRouteLength/5)*5, 50)
 		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
 	}
 
