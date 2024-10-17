@@ -125,8 +125,8 @@ export default class{
 				'line-width': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
-					7,
-					["match", ["get", "nodeType"], "Hospital", 5, 2]
+						["match", ["get", "nodeType"], "Hospital", 7, 4],
+						["match", ["get", "nodeType"], "Hospital", 5, 2]
 				],
 				'line-blur': [
 					'case',
@@ -137,8 +137,10 @@ export default class{
 				'line-opacity': [
 					'case', 
 					['boolean', ['feature-state', 'showRoute'], false],
-					["match", ["get", "nodeType"], "Hospital", 1, 0.6],
-					0
+						["match", ["get", "nodeType"], "Hospital", 1, [
+							'case', ['boolean', ['feature-state', 'hover'], false], 1, 0.6
+						]],
+						0
 				]
 			}
 		})
