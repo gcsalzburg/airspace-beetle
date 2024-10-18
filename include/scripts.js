@@ -1,8 +1,9 @@
 'use strict'
 
-import Follower from './Follower.js'
-import AirspaceBeetle from './AirspaceBeetle.js'
 import DataImporter from './DataImporter.js'
+import AirspaceBeetle from './AirspaceBeetle.js'
+import Follower from './Follower.js'
+
 import GeojsonToKml from './GeojsonToKml.js'
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -12,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	const csvImporter = new DataImporter({
 		isUpdated: (newData) => {
-			myNetwork.csvIsUpdated(newData)
+			myNetwork.importNewLocations(newData)
 		},
 		dom: {
 			textarea: document.querySelector('.imported-csv'),

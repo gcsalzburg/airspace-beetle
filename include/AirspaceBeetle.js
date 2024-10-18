@@ -133,14 +133,13 @@ export default class{
 					['boolean', ['feature-state', 'showThisNetwork'], true],
 						[
 							'case',
-							['<=', ['to-number', ['get', 'pathDistance']], ['feature-state', 'droneRange']],
+							['<=', ['to-number', ['get', 'pathDistance']], ['to-number', ['feature-state', 'droneRange']]],
 								["match", ["get", "nodeType"], "Hospital", 1, [
 									'case', ['boolean', ['feature-state', 'hover'], false], 1, 0.6
 								]],
 								0
 						],
-						0
-								
+						0			
 				]
 			}
 		})
@@ -752,8 +751,8 @@ export default class{
 
 	// **********************************************************
 	// Update geoJSOn from updated CSV data
-	
-	csvIsUpdated = (newLocations) => {
+
+	importNewLocations = (newLocations) => {
 
 		// Clear existing map content
 		this.mapData.routes.features = []
