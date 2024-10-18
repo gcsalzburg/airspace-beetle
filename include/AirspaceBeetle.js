@@ -114,14 +114,7 @@ export default class{
 				'line-cap': 'round'
 			},
 			'paint': {
-				// 'line-color': `#ffc03a`,
 				'line-color': ['get', 'color'],
-				
-				// TODO - find out why it doesn't show the lines with dasharray length of 0
-         /*	 "line-dasharray": [
-					0.5,
-					["match", ["get", "nodeType"], "Other", 1.5, 0]
-				 ],*/
 				'line-width': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
@@ -134,13 +127,20 @@ export default class{
 					0,
 					3
 				],
+				// Useful page explaining how this works: https://docs.mapbox.com/style-spec/reference/expressions/#case
 				'line-opacity': [
-					'case', 
-					['boolean', ['feature-state', 'showRoute'], false],
-						["match", ["get", "nodeType"], "Hospital", 1, [
-							'case', ['boolean', ['feature-state', 'hover'], false], 1, 0.6
-						]],
+					'case',
+					['boolean', ['feature-state', 'showThisNetwork'], true],
+						[
+							'case',
+							['<=', ['to-number', ['get', 'pathDistance']], ['feature-state', 'droneRange']],
+								["match", ["get", "nodeType"], "Hospital", 1, [
+									'case', ['boolean', ['feature-state', 'hover'], false], 1, 0.6
+								]],
+								0
+						],
 						0
+								
 				]
 			}
 		})
@@ -210,7 +210,7 @@ export default class{
 				for(let feature of this.mapData.routes.features){
 					this.map.setFeatureState(
 						{source: 'routes', id: feature.properties.id},
-						{showRoute: false}
+						{showThisNetwork: false}
 					)
 				}
 				// Filter routes by which ones are within range
@@ -223,15 +223,19 @@ export default class{
 				validRoutes.forEach((feature) => {
 					this.map.setFeatureState(
 						{source: 'routes', id: feature.id},
-						{showRoute: true}
+						{showThisNetwork: true}
 					)
 				})
 
 			}
 		})
 		this.options.dom.locationsList.addEventListener('mouseleave', (e) => {
-			// Re-draw visibility based on the drone range
-			this.setDroneRange(this.featureOptions.droneRange)
+			for(let feature of this.mapData.routes.features){
+				this.map.setFeatureState(
+					{source: 'routes', id: feature.properties.id},
+					{showThisNetwork: true}
+				)
+			}
 		})
 	}
 
@@ -747,88 +751,35 @@ export default class{
 	}
 
 	// **********************************************************
-	// Sync functions
-	// These keep the CSV and map display in sync
-
-	// Take an updated CSV from the input box, and convert it to geoJSON and render
-	// Expected format: Site name,Latitude,Longitude,Type,Trust,Is hub?
-	csvIsUpdated = (csv) => {
-
-		// Trim incoming CSV
-		csv = csv.trim()
+	// Update geoJSOn from updated CSV data
+	
+	csvIsUpdated = (newLocations) => {
 
 		// Clear existing map content
 		this.mapData.routes.features = []
 		this.mapData.locations.features = []
 
-		// Clear errors
-		if(this.options.dom.lineNumbers.children.length > 0){
-			this.options.dom.lineNumbers.querySelectorAll(`span`).forEach(span => span.classList.remove('has-error'))
-		}
-		this.options.dom.importSuccess.classList.remove('show')
-		this.options.dom.importWarning.classList.remove('show')
-		this.options.dom.importWarning.querySelector('.warning-details').innerHTML = ''
-		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = '0'
-
-		// Convert to geoJSON
-		let rowNum = 0
-		let rowSuccessCount = 0
-		for(let row of csv.split('\n')){
-			rowNum++
-			const parts = row.split(',')
-
-			// Few basic data integrity checks
-			if(parts.length < 3){
-				this.addImportError(rowNum, 'Row too short', row)
-				continue
-			}
-			if(isNaN(parts[1]) || isNaN(parts[2])){
-				this.addImportError(rowNum, `Lat/lng coords don't seem to be number`, row)
-				continue
-			}else if(parts[1].length == 0 || parts[2].length == 0){
-				this.addImportError(rowNum, `Lat/lng coords missing`, row)
-				continue
-			}
-
-			// Save coords
-			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
-
-			const isHub = (parts[5]=='y')
+		for(let location of newLocations){
 
 			// Update Trusts list
-			this.addTrust(parts[4])
+			this.addTrust(location.trust)
 
 			// Update types list
-			this.addType(parts[3])
+			this.addType(location.type)
 
 			// Save the location if it is a unique location
-			this.addLocation(parts[0], location_coords, rowNum, {
-				type: parts[3],
-				trust: parts[4],
-				isHub: isHub
+			this.addLocation(location.name, location.coordinates, {
+				type: location.type,
+				trust: location.trust,
+				isHub: location.isHub
 			})
-			rowSuccessCount++
-		}
 
-		if(rowSuccessCount > 0){
-			this.options.dom.importSuccess.querySelector('.num-rows').innerHTML = rowSuccessCount
-			this.options.dom.importSuccess.classList.add('show')
 		}
 		
 		// Add the nodes as markers
 		this.regenerateMap()
 	}
 
-	// Render a warning underneath that an error occurred
-	addImportError = (rowNum, errorMessage, rowContents) => {
-		this.options.dom.lineNumbers.querySelector(`:nth-child(${rowNum})`).classList.add('has-error')
-		this.options.dom.lineNumbers.querySelector(`:nth-child(${rowNum})`).setAttribute('title', errorMessage)
-
-		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = parseInt(this.options.dom.importWarning.querySelector('.num-rows').innerHTML)+1
-		this.options.dom.importWarning.classList.add('show')
-
-		this.options.dom.importWarning.querySelector('.warning-details').insertAdjacentHTML('beforeend', `<li>Row ${rowNum}: ${errorMessage}<br><i>${rowContents}</i>`)
-	}
 
 	// Add a new Trust to the list
 	addTrust = (name) => {
@@ -858,7 +809,7 @@ export default class{
 	}
 
 	// Add a location to the list
-	addLocation = (name, coords, rowNum, metadata = {}) => {
+	addLocation = (name, coords, metadata = {}) => {
 		const existingLocation = this.findObjectByProperty(this.mapData.locations.features, "properties.name", name)
 		if(!existingLocation){
 			const	properties = {
@@ -878,13 +829,14 @@ export default class{
 			})
 			return true
 		}else{
-			if((existingLocation.geometry.coordinates[0] == coords[0]) && (existingLocation.geometry.coordinates[1] == coords[1])){
+			// TODO: Move the duplicate row check to the DataImporter
+		//	if((existingLocation.geometry.coordinates[0] == coords[0]) && (existingLocation.geometry.coordinates[1] == coords[1])){
 				existingLocation.properties.numRoutes++
-				return true
-			}else{
-				this.addImportError(rowNum, `Duplicate location name: ${name}`, `${coords} vs. ${existingLocation.geometry.coordinates}`)
-				return false
-			}
+		//		return true
+		//	}else{
+		//		this.addImportError(rowNum, `Duplicate location name: ${name}`, `${coords} vs. ${existingLocation.geometry.coordinates}`)
+		//		return false
+		//	}
 		}
 	}
 
@@ -895,30 +847,12 @@ export default class{
 		// Save the range
 		this.featureOptions.droneRange = parseInt(range)
 
-		// Clear all routes as being within drone range or not
 		for(let feature of this.mapData.routes.features){
 			this.map.setFeatureState(
 				{source: 'routes', id: feature.properties.id},
-				{showRoute: false}
+				{droneRange: this.featureOptions.droneRange}
 			)
 		}
-		// TODO - get rid of all this and just put the > logic in the paint bit itself!
-		// Filter routes by which ones are within range
-		const validRoutes = this.map.querySourceFeatures('routes', {
-			sourceLayer: 'routes',
-			filter: [
-				'all',
-				['<', ['to-number', ['get', 'pathDistance']], this.featureOptions.droneRange]
-			]
-		})
-	
-		// For each valid route, set the feature as being within range
-		validRoutes.forEach((feature) => {
-			this.map.setFeatureState(
-				{source: 'routes', id: feature.id},
-				{showRoute: true}
-			)
-		})
 
 		// Update this info in the centroids too
 		for(let centroid of this.mapData.centroids){
