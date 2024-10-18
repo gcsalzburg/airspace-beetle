@@ -66,6 +66,8 @@ export default class{
 	// Process input
 	// Expected format: Site name,Latitude,Longitude,Type,Trust,Is hub?
 
+	// TODO add check here duplicate name and/or duplicate lat/lng
+
 	_processData = (csv) => {
 
 		// Trim incoming CSV

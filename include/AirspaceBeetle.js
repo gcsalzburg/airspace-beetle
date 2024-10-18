@@ -91,7 +91,14 @@ export default class{
 		// Once the map has loaded
 		this.map.on('load', async () => {
 			this.initMapLayers()				// Prep mapbox layers
+
+			this.loadFromStorage()					// Load settings from local storage
 			this.options.onReady()			// Call the ready function to load in first data
+		})
+
+		// Set handler for the map changing
+		this.map.on('moveend', () => {
+			this.saveToStorage()
 		})
 	}
 
@@ -828,14 +835,7 @@ export default class{
 			})
 			return true
 		}else{
-			// TODO: Move the duplicate row check to the DataImporter
-		//	if((existingLocation.geometry.coordinates[0] == coords[0]) && (existingLocation.geometry.coordinates[1] == coords[1])){
-				existingLocation.properties.numRoutes++
-		//		return true
-		//	}else{
-		//		this.addImportError(rowNum, `Duplicate location name: ${name}`, `${coords} vs. ${existingLocation.geometry.coordinates}`)
-		//		return false
-		//	}
+			existingLocation.properties.numRoutes++
 		}
 	}
 
@@ -882,6 +882,62 @@ export default class{
 		for(let centroid of this.mapData.centroids){
 			isShow ? centroid.show() : centroid.hide()
 		}
+	}
+
+	// **********************************************************
+	// localStorage
+
+	loadFromStorage = () => {
+
+		const loadedData = localStorage.getItem('beetle-data')
+
+		if (loadedData) {
+			const loadedDataJSON = JSON.parse(loadedData)
+
+			if(loadedDataJSON.featureOptions){
+				this.featureOptions = loadedDataJSON.featureOptions
+				this.setDroneRange(this.featureOptions.droneRange)
+			}
+
+			if(loadedDataJSON.map){
+				this.map.setCenter(loadedDataJSON.map.center)
+				this.map.setZoom(loadedDataJSON.map.zoom)
+			}
+		}
+
+		/*
+		// geoJSON for map display
+		mapData = {
+			locations: {
+				type: "FeatureCollection",
+				features: []					
+			},
+			waypoints: {
+				type: "FeatureCollection",
+				features: []	
+			},
+			routes: {
+				type: "FeatureCollection",
+				features: []					
+			},
+			centroids: [],
+			markers: [],
+			trusts: [],
+			types: []
+		}*/
+	}
+
+	saveToStorage = () => {
+
+		const beetleData = {
+			featureOptions: this.featureOptions,
+			map: {
+				center: this.map.getCenter(),
+				zoom: this.map.getZoom()
+			}
+		}
+	
+		localStorage.setItem('beetle-data', JSON.stringify(beetleData))
 	}
 
 	// **********************************************************
