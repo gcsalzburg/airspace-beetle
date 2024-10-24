@@ -152,25 +152,25 @@ export default class{
 		})
 
 		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waynode effect)
-		document.addEventListener('keydown', (e) => {
-			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
-		//	if(this.currentUIState == 'routeHover'){
-				this.map.getCanvasContainer().style.cursor = 'crosshair'
-		//	}
-	 	})
-		document.addEventListener('keyup', (e) => {
-			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
-		//	if(this.currentUIState == 'routeHover'){
-				this.map.getCanvasContainer().style.cursor = 'default'
-		//	}
-		})
+		//document.addEventListener('keydown', (e) => {
+		//	this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+		////	if(this.currentUIState == 'routeHover'){
+		//		this.map.getCanvasContainer().style.cursor = 'crosshair'
+		////	}
+	 	//})
+		//document.addEventListener('keyup', (e) => {
+		//	this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+		////	if(this.currentUIState == 'routeHover'){
+		//		this.map.getCanvasContainer().style.cursor = 'default'
+		////	}
+		//})
 
 		// Add click effect to map
-		this.map.on('click', (e) => {
-			if (this.ctrlKeyHeld && this.currentUIState && !['waynodeDrag', 'waynodeHover', 'routeHover'].includes(this.currentUIState)) {
-				this.createWaypoint(e.lngLat.toArray())
-			}
-		})
+		//this.map.on('click', (e) => {
+		//	if (this.ctrlKeyHeld && this.currentUIState && !['waynodeDrag', 'waynodeHover', 'routeHover'].includes(this.currentUIState)) {
+		//		this.createWaypoint(e.lngLat.toArray())
+		//	}
+		//})
 
 		// Add hover effects to routes
 		this.map.on('mousemove', 'routes', (e) => {
@@ -179,29 +179,29 @@ export default class{
 			}
 		})
 
-		// Add click effect to route
-		this.map.on('mousedown', 'routes', (e) => {
-			if (e.features.length > 0 && this.ctrlKeyHeld && (this.currentUIState != 'waynodeHover')){
-				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
-				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
-
-
-				if(mapData_feature.properties.pathDistance < this.featureOptions.droneRange){
-
-					// Split the line based on the clicked location
-					const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
-					const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
-
-					// Update the line geometry to have the new coordinate spliced in
-					split.features[1].geometry.coordinates.shift()
-					const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
-					mapData_feature.geometry.coordinates = newCoords
-
-					// Regenerate the map
-					this.regenerateMap()
-				}
-			}
-		 });
+		//// Add click effect to route
+		//this.map.on('mousedown', 'routes', (e) => {
+		//	if (e.features.length > 0 && this.ctrlKeyHeld && (this.currentUIState != 'waynodeHover')){
+		//		// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
+		//		const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
+		//
+		//
+		//		if(mapData_feature.properties.pathDistance < this.featureOptions.droneRange){
+		//
+		//			// Split the line based on the clicked location
+		//			const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
+		//			const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
+		//
+		//			// Update the line geometry to have the new coordinate spliced in
+		//			split.features[1].geometry.coordinates.shift()
+		//			const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
+		//			mapData_feature.geometry.coordinates = newCoords
+		//
+		//			// Regenerate the map
+		//			this.regenerateMap()
+		//		}
+		//	}
+		// });
 
 		this.map.on('mouseleave', 'routes', () => {
 			this.setUIState('routeLeave')
