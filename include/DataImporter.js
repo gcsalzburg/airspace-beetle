@@ -1,5 +1,7 @@
 export default class{
 
+	locationsArray = []
+
 	// Default options are below
 	options = {
 	}
@@ -32,14 +34,22 @@ export default class{
 	}
 
 	initialLoad = async () => {
-		const storedImportedData = localStorage.getItem("importedData")
-		if(storedImportedData){
-			this.options.dom.textarea.value = storedImportedData
-			this._generateLineNumbers(this.options.dom.textarea)
 
-			this._processData(storedImportedData)
+		const savedData = localStorage.getItem("importedData")
+
+		if(savedData){
+
+			this.options.dom.textarea.value = savedData
+			this._generateLineNumbers(this.options.dom.textarea)
+			if(this._processData(savedData)){
+				this.options.isUpdated(this.locationsArray)
+			}
+
 		}else{
+
 			// Load in initial CSV data
+			// Probably first time around
+
 			const response = fetch('include/data.csv')
 				.then(response => response.text())
 				.catch(err => console.log(err))
@@ -47,7 +57,9 @@ export default class{
 				this.options.dom.textarea.innerHTML = csv
 				this._generateLineNumbers(this.options.dom.textarea)
 
-				this._processData(newCSV)
+				if(this._processData(savedData)){
+					this.options.isUpdated(this.locationsArray)
+				}
 			})
 		}
 	}
@@ -82,7 +94,7 @@ export default class{
 		this.options.dom.importWarning.querySelector('.warning-details').innerHTML = ''
 		this.options.dom.importWarning.querySelector('.num-rows').innerHTML = '0'
 
-		const newLocationsArray = []
+		this.locationsArray = []
 
 		// Convert to geoJSON
 		let rowNum = 0
@@ -109,7 +121,7 @@ export default class{
 			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
 			const isHub = (parts[5]=='y')
 
-			newLocationsArray.push({
+			this.locationsArray.push({
 				name: parts[0],
 				coordinates: location_coords,
 				type: parts[3],
@@ -123,8 +135,9 @@ export default class{
 		if(rowSuccessCount > 0){
 			this.options.dom.importSuccess.querySelector('.num-rows').innerHTML = rowSuccessCount
 			this.options.dom.importSuccess.classList.add('show')
-			this.options.isUpdated(newLocationsArray)
 		}
+
+		return rowSuccessCount
 
 	}
 
