@@ -20,9 +20,10 @@ export default class{
 		routes: {
 			type: "FeatureCollection",
 			features: []					
-		},
-		centroids: []
+		}
 	}
+
+	centroids = []
 
 	// Mapbox objects
 	map = null
@@ -355,7 +356,7 @@ export default class{
 				droneRange: this.featureOptions.droneRange
 			})
 
-			this.mapData.centroids.push(centroid)
+			this.centroids.push(centroid)
 		}
 	}
 
@@ -576,7 +577,7 @@ export default class{
 		}
 
 		// Update this info in the centroids too
-		for(let centroid of this.mapData.centroids){
+		for(let centroid of this.centroids){
 			centroid.setDroneRange(range)
 		}
 	}
@@ -595,13 +596,13 @@ export default class{
 	}
 
 	setCentroidLocations = () => {
-		for(let centroid of this.mapData.centroids){
+		for(let centroid of this.centroids){
 			centroid.setLocations(this.mapData.locations.features.filter(location => location.properties.trust == centroid.getTrust() && !location.properties.exclude))
 		}
 	}
 
 	toggleCentroids = (isShow = false) => {
-		for(let centroid of this.mapData.centroids){
+		for(let centroid of this.centroids){
 			isShow ? centroid.show() : centroid.hide()
 		}
 	}
@@ -636,7 +637,10 @@ export default class{
 	saveToStorage = () => {
 
 		const dataToSave = {
-			// TODO fix this so we don't save objects (like markers and centroids), just the data we need to re-create them when we load it back in
+			// TODO move this save/restore bit out of the AirspaceBeetle class and into the top level at scripts.js
+			// TODO then we can decide whether to do it from CSV or the geoJSON each time
+			// TODO actually, we should just do it from the geoJSON -> if we have CSV data, we have geoJSON
+			// TODO we need to implement the lock (or parity matching) between CSV data and geoJSON then
 		//	mapData : this.mapData,
 			featureOptions: this.featureOptions,
 			map: {
