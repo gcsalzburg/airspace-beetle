@@ -125,14 +125,14 @@ export default class{
 				'line-width': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
-						["match", ["get", "nodeType"], "Hospital", 7, 4],
-						["match", ["get", "nodeType"], "Hospital", 5, 2]
+						["match", ["get", "nodeType"], "Hospital", 6, 4],
+						["match", ["get", "nodeType"], "Hospital", 4, 2]
 				],
 				'line-blur': [
 					'case',
 					['boolean', ['feature-state', 'hover'], false],
 					0,
-					3
+					2
 				],
 				// Useful page explaining how this works: https://docs.mapbox.com/style-spec/reference/expressions/#case
 				'line-opacity': [
@@ -251,7 +251,8 @@ export default class{
 			markers: true,
 			routes: true,
 			metadata: true,
-			centroids: true
+			centroids: true,
+			saveToStorage: true
 		}, ...options}
 	
 		if(_options.markers){
@@ -288,6 +289,9 @@ export default class{
 			// Show centroids
 			this.createCentroids()
 		}
+
+		// Save to storage as something probably changed
+		this.saveToStorage()
 
 	}
 
@@ -889,10 +893,15 @@ export default class{
 
 	loadFromStorage = () => {
 
-		const loadedData = localStorage.getItem('beetle-data')
+		const loadedData = localStorage.getItem('mapData')
 
 		if (loadedData) {
 			const loadedDataJSON = JSON.parse(loadedData)
+
+		//	if(loadedDataJSON.mapData){
+		//		this.mapData = loadedDataJSON.mapData
+		//		this.regenerateMap()
+		//	}
 
 			if(loadedDataJSON.featureOptions){
 				this.featureOptions = loadedDataJSON.featureOptions
@@ -904,32 +913,13 @@ export default class{
 				this.map.setZoom(loadedDataJSON.map.zoom)
 			}
 		}
-
-		/*
-		// geoJSON for map display
-		mapData = {
-			locations: {
-				type: "FeatureCollection",
-				features: []					
-			},
-			waypoints: {
-				type: "FeatureCollection",
-				features: []	
-			},
-			routes: {
-				type: "FeatureCollection",
-				features: []					
-			},
-			centroids: [],
-			markers: [],
-			trusts: [],
-			types: []
-		}*/
 	}
 
 	saveToStorage = () => {
 
-		const beetleData = {
+		const dataToSave = {
+			// TODO fix this so we don't save objects (like markers and centroids), just the data we need to re-create them when we load it back in
+		//	mapData : this.mapData,
 			featureOptions: this.featureOptions,
 			map: {
 				center: this.map.getCenter(),
@@ -937,7 +927,7 @@ export default class{
 			}
 		}
 	
-		localStorage.setItem('beetle-data', JSON.stringify(beetleData))
+		localStorage.setItem('mapData', JSON.stringify(dataToSave))
 	}
 
 	// **********************************************************
