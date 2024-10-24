@@ -1,5 +1,8 @@
 
 import Waynode from './Waynode.js'
+import Markers from './Markers.js'
+import Networks from './Networks.js'
+import LocationTypes from './LocationTypes.js'
 import Centroid from './Centroid.js'
 
 export default class{
@@ -18,17 +21,13 @@ export default class{
 			type: "FeatureCollection",
 			features: []					
 		},
-		centroids: [],
-		markers: [],
-		trusts: [],
-		types: []
+		centroids: []
 	}
 
 	// Mapbox objects
 	map = null
 	hoveredRoute = null
-
-	currentUIState = 'initial'
+	hoveredLocation = null
 
 	// Feature options
 	featureOptions = {
@@ -50,6 +49,12 @@ export default class{
 				lng: -0.164136,
 				lat: 51.569356,
 			}
+		},
+		route_editing: {
+			waypoints_enabled: true,
+			waynodes_enabled: false,
+			canEdit: false,
+			isDragging: false
 		}
 	}
 
@@ -59,9 +64,70 @@ export default class{
 
 		this.options = {...this.options, ...options}
 
+		this.networks = new Networks({
+			listContainer: this.options.dom.networksList,
+			onListMouseMove: (location) => {
+				// Set all routes to false
+				for(let feature of this.mapData.routes.features){
+					this.map.setFeatureState(
+						{source: 'routes', id: feature.properties.id},
+						{showThisNetwork: false}
+					)
+				}
+				// Filter routes by which ones are within range
+				const validRoutes = this.map.querySourceFeatures('routes', {
+					sourceLayer: 'routes',
+					filter: ['==', 'trust', location.dataset.name]
+				})
+
+				// For each valid route, set the feature as being within range
+				validRoutes.forEach((feature) => {
+					this.map.setFeatureState(
+						{source: 'routes', id: feature.id},
+						{showThisNetwork: true}
+					)
+				})
+			},
+			onListMouseLeave: () => {
+				for(let feature of this.mapData.routes.features){
+					this.map.setFeatureState(
+						{source: 'routes', id: feature.properties.id},
+						{showThisNetwork: true}
+					)
+				}
+			}
+		})
+
+		this.types = new LocationTypes({
+			listContainer: this.options.dom.weightsSliders,
+			onSliderChange: (name, value) => {
+				this.setCentroidWeights(name, value)
+			}
+		})
+
 		// Load map
 		this.initMap()
 
+		this.markers = new Markers({
+			map: this.map,
+			onHubChange: (oldHub, newHub) => {
+
+				// Update geoJSON
+				this.findObjectByProperty(this.mapData.locations.features, "properties.name", oldHub).properties.isHub  = false
+				this.findObjectByProperty(this.mapData.locations.features, "properties.name", newHub).properties.isHub  = true	
+				
+				this.regenerateMap({centroids: false})
+				this.setCentroidLocations()
+			},
+			onToggleExclude: (locationName, isExclude) => {
+
+				// Update geoJSON
+				this.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isExclude = isExclude
+
+				this.regenerateMap({markers: false, centroids: false})
+				this.setCentroidLocations()
+			}
+		})
 	}
 
 	// **********************************************************
@@ -151,98 +217,68 @@ export default class{
 			}
 		})
 
-		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waynode effect)
-		//document.addEventListener('keydown', (e) => {
-		//	this.ctrlKeyHeld = e.ctrlKey || e.metaKey
-		////	if(this.currentUIState == 'routeHover'){
-		//		this.map.getCanvasContainer().style.cursor = 'crosshair'
-		////	}
-	 	//})
-		//document.addEventListener('keyup', (e) => {
-		//	this.ctrlKeyHeld = e.ctrlKey || e.metaKey
-		////	if(this.currentUIState == 'routeHover'){
-		//		this.map.getCanvasContainer().style.cursor = 'default'
-		////	}
-		//})
-
-		// Add click effect to map
-		//this.map.on('click', (e) => {
-		//	if (this.ctrlKeyHeld && this.currentUIState && !['waynodeDrag', 'waynodeHover', 'routeHover'].includes(this.currentUIState)) {
-		//		this.createWaypoint(e.lngLat.toArray())
-		//	}
-		//})
+		if(this.options.route_editing.waypoints_enabled){
+			this.initRouteEditing()
+		}
 
 		// Add hover effects to routes
 		this.map.on('mousemove', 'routes', (e) => {
 			if (e.features.length > 0) {
-				this.setUIState('routeHover', {feature: e.features[0]})
+				this.highlightRoute(e.features[0])
 			}
 		})
-
-		//// Add click effect to route
-		//this.map.on('mousedown', 'routes', (e) => {
-		//	if (e.features.length > 0 && this.ctrlKeyHeld && (this.currentUIState != 'waynodeHover')){
-		//		// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
-		//		const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
-		//
-		//
-		//		if(mapData_feature.properties.pathDistance < this.featureOptions.droneRange){
-		//
-		//			// Split the line based on the clicked location
-		//			const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
-		//			const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
-		//
-		//			// Update the line geometry to have the new coordinate spliced in
-		//			split.features[1].geometry.coordinates.shift()
-		//			const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
-		//			mapData_feature.geometry.coordinates = newCoords
-		//
-		//			// Regenerate the map
-		//			this.regenerateMap()
-		//		}
-		//	}
-		// });
-
 		this.map.on('mouseleave', 'routes', () => {
-			this.setUIState('routeLeave')
+			// Clear the route highlighting effect
+			this.highlightRoute()
+		})
+	}
+
+	initRouteEditing = () => {
+
+		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waynode effect)
+		document.addEventListener('keydown', (e) => {
+			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+			this.options.route_editing.is_currently_editing = this.ctrlKeyHeld
+			this.setCursor()
+	 	})
+		document.addEventListener('keyup', (e) => {
+			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+			this.options.route_editing.is_currently_editing = this.ctrlKeyHeld
+			this.setCursor()
 		})
 
-		// Add hover effects to list of locations on side
-		this.options.dom.locationsList.addEventListener('mousemove', (e) => {
-			const location = e.target.closest('.location')
-			if(location){
+		// Add click effect to map
+		this.map.on('click', (e) => {
+			if(this.options.route_editing.canEdit && !this.options.route_editing.isDragging){
+				// TODO: also prevent this if hovering a route - use this.hoveredRoute
+				this.createWaypoint(e.lngLat.toArray())
+			}
+		})
 
-				// Set all routes to false
-				for(let feature of this.mapData.routes.features){
-					this.map.setFeatureState(
-						{source: 'routes', id: feature.properties.id},
-						{showThisNetwork: false}
-					)
+		// Add click effect to route
+		this.map.on('mousedown', 'routes', (e) => {
+			if (e.features.length > 0 && this.options.route_editing.canEdit && !this.options.route_editing.isDragging){
+				// TODO: also prevent this when hovering on a waynode - use this.hoveredWaynode
+
+				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
+				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
+		
+				if(mapData_feature.properties.pathDistance < this.featureOptions.droneRange){
+		
+					// Split the line based on the clicked location
+					const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
+					const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
+		
+					// Update the line geometry to have the new coordinate spliced in
+					split.features[1].geometry.coordinates.shift()
+					const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
+					mapData_feature.geometry.coordinates = newCoords
+		
+					// Regenerate the map
+					this.regenerateMap()
 				}
-				// Filter routes by which ones are within range
-				const validRoutes = this.map.querySourceFeatures('routes', {
-					sourceLayer: 'routes',
-					filter: ['==', 'trust', location.dataset.name]
-				})
-
-				// For each valid route, set the feature as being within range
-				validRoutes.forEach((feature) => {
-					this.map.setFeatureState(
-						{source: 'routes', id: feature.id},
-						{showThisNetwork: true}
-					)
-				})
-
 			}
-		})
-		this.options.dom.locationsList.addEventListener('mouseleave', (e) => {
-			for(let feature of this.mapData.routes.features){
-				this.map.setFeatureState(
-					{source: 'routes', id: feature.properties.id},
-					{showThisNetwork: true}
-				)
-			}
-		})
+		 })
 	}
 
 	regenerateMap = (options) => {
@@ -256,12 +292,8 @@ export default class{
 		}, ...options}
 	
 		if(_options.markers){
-			// Clear old markers
-			for(let marker of this.mapData.markers){
-				marker.remove()
-			}
-			// Add new markers
-			this.addMarkers()
+			this.markers.removeFromMap()
+			this.markers.addToMap(this.mapData.locations.features, this.networks.get())
 		}
 			
 		if(_options.routes){
@@ -276,11 +308,11 @@ export default class{
 			this.map.getSource('routes').setData(this.mapData.routes)
 		}
 
-		if(_options.metadata){
-			// Create list of all Trust networks
-			this.createTrustsList()
-
-			this.createTypesList()
+		if(_options.metadata){	
+			// Render lists of networks and types
+			this.networks.updateCounts(this.countOccurrences(this.mapData.locations.features.filter(location => !location.properties.exclude), 'properties.trust'))
+			this.networks.renderDOMList()
+			this.types.renderDOMList()
 
 			this.setDroneRangeSliderBounds()
 		}
@@ -309,52 +341,8 @@ export default class{
 		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
 	}
 
-	createTrustsList = () => {
-
-		this.options.dom.locationsList.innerHTML = ""
-
-		// Recalculate list
-		for(let trust of this.mapData.trusts){
-			trust.numLocations = this.mapData.locations.features.filter(location => location.properties.trust == trust.name && !location.properties.exclude).length
-		}
-
-		// Sort list of Trusts
-		this.mapData.trusts.sort((a,b) => b.name.localeCompare(a.name))
-		this.mapData.trusts.sort((a,b) => a.numLocations - b.numLocations).reverse()
-
-		// Print the list
-		for(let trust of this.mapData.trusts){
-			this.options.dom.locationsList.insertAdjacentHTML('beforeend',`<div class="location" data-name="${trust.name}"><span class="num" style="background-color:${trust.color}">${trust.numLocations}</span> ${trust.name}</div>`)
-		}
-	}
-
-	createTypesList = () => {
-
-		this.options.dom.weightsSliders.innerHTML = ""
-
-		// Sort list of types alphabetically
-		this.mapData.types.sort((a,b) => a.name - b.name)
-
-		for(let type of this.mapData.types){
-			const safeName = type.name.replace(/\s/g, "")
-			const sliderHTML = `<div class="slider-wrapper ${safeName}-weight-wrapper">
-									<label for="${safeName}-weight">${type.name}:</label>
-									<span class="slider">
-										<input type="range" class="${safeName}-weight" id="${safeName}-weight" name="${safeName}-weight" min="1" max="100" step="1" value="1" />
-									</span>
-									<span class="value">1</span>
-								</div>`
-			this.options.dom.weightsSliders.insertAdjacentHTML('beforeend',sliderHTML)
-
-			document.querySelector(`.${safeName}-weight-wrapper input[type="range"]`).addEventListener("input", (e) => {
-				document.querySelector(`.${safeName}-weight-wrapper .value`).textContent = `${e.target.value}`
-				this.setCentroidWeights(type.name,e.target.value)
-			})
-		}
-	}
-
 	createCentroids = () => {
-		for(let trust of this.mapData.trusts){
+		for(let trust of this.networks.get()){
 			const hubLocation = this.mapData.locations.features.find(location => location.properties.isHub && location.properties.trust == trust.name)
 			
 			const centroid = new Centroid({
@@ -371,156 +359,76 @@ export default class{
 		}
 	}
 
-	setUIState = (state, options = {}) => {
+	highlightRoute = (feature = null) => {
 
-		// Clear any differences here
-		if(state == this.currentUIState){
-			// Do nothing?
-			return
-		}
-
-		switch(state){
-
-			case 'locationHover':
-				// Show the hovered name for this location
-				// (maybe) highlight all routes to/from this location
-
-				if(this.currentUIState != 'waynodeDrag'){
-					document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
-					document.querySelector(`.marker[data-name="${options.location}"]`).classList.add('show-label')
-					this.currentUIState = state
-				}
-
-				break
-
-			case 'locationLeave':
-				if(!['waynodeDrag', 'waynodeHover'].includes(this.currentUIState)){
-					this.setUIState('initial')
-					this.currentUIState = state
-				}
-				break
-
-			case 'routeHover':
-				// Highlight the route
-				// Label the start and end locations
-				// Add follower with the length of the route
-				// Set cursor, based on if CTRL key held down or not
-
-				if(!['waynodeDrag', 'waynodeHover'].includes(this.currentUIState)){
-					this.map.getCanvasContainer().style.cursor = this.ctrlKeyHeld ? 'crosshair' : 'default'
-					this.highlightRoute(options.feature)
-					this.currentUIState = state
-				}
-				
-				break
-			
-			case 'routeLeave':
-				if(!['waynodeDrag', 'waynodeHover'].includes(this.currentUIState)){
-					this.setUIState('initial')
-					this.currentUIState = state
-				}
-				break
-
-			case 'waynodeHover':
-				// Change cursor to move cursor
-				// (maybe) make the route dashed to show it is about to be edited
-				// Add follower with the length of the route
-
-				if(this.currentUIState != 'waynodeDrag'){
-					this.highlightRoute(options.feature)
-					this.map.getCanvasContainer().style.cursor = 'move'
-					this.currentUIState = state
-				}
-
-				break
-
-			case 'waynodeLeave':
-				if(this.currentUIState != 'waynodeDrag'){
-					// TODO: Do we switch to the route hover at this point or not?
-					this.setUIState('initial')
-					this.currentUIState = state
-				}
-				break
-
-			case 'waynodeDrag':
-				// Match whatver the above is
-				// Add follower with the length of the route
-				this.highlightRoute(options.feature)
-				this.map.getCanvasContainer().style.cursor = 'move'
-				this.currentUIState = state
-				break
-
-			case 'waynodeDragEnd':
-				this.setUIState('initial')
-				this.currentUIState = state
-				break
-
-			case 'initial':
-				// Default case here
-
-				this.map.getCanvasContainer().style.cursor = 'grab'
-
-				// Clear any route hover effects
-				if (this.hoveredRoute !== null) {
-					this.map.setFeatureState(
-						{source: 'routes', id: this.hoveredRoute},
-						{hover: false}
-					)
-					this.hoveredRoute = null
-				}
-
-				// Clear the follower
-				this.clearFollower()
-	
-				// Clear location labels too
-				this.showLocationLabels()
-
-				this.currentUIState = state
-
-				break
-		}
-	}
-
-	highlightRoute = (feature) => {
-		// Apply feature state to the correct route
-		// Only do the hover if we are within the droneRange or not
-		// TODO: Make this filtering more generic
-		if(feature.properties.pathDistance < this.featureOptions.droneRange){
-
-			// Unhighlight current hovered one
+		// Clear highligthing
+		if(!feature){
 			if (this.hoveredRoute !== null) {
 				this.map.setFeatureState(
 					{source: 'routes', id: this.hoveredRoute},
 					{hover: false}
 				)
+				this.hoveredRoute = null
 			}
 
-			// Highlight new one
-			this.hoveredRoute = feature.id
-			this.map.setFeatureState(
-				{source: 'routes', id: feature.id},
-				{hover: true}
-			)
+			// Clear the follower
+			this.clearFollower()
 
-			// Set the follower with distance
-			this.setFollowerDistance(feature.properties.pathDistance)
+			// Clear location labels too
+			this.markers.showLabels()
 
-			// Add location labels
-			this.showLocationLabels([feature.properties.source, feature.properties.destination])
+			// Reset cursor
+			this.setCursor()
+
+		}else{
+			// Apply feature state to the correct route
+			// Only do the hover if we are within the droneRange or not
+			// TODO: Make this filtering more generic
+			if(feature.properties.pathDistance < this.featureOptions.droneRange){
+
+				// Unhighlight current hovered one
+				if (this.hoveredRoute !== null) {
+					this.map.setFeatureState(
+						{source: 'routes', id: this.hoveredRoute},
+						{hover: false}
+					)
+				}
+
+				// Highlight new one
+				this.hoveredRoute = feature.id
+				this.map.setFeatureState(
+					{source: 'routes', id: feature.id},
+					{hover: true}
+				)
+
+				// Set the follower with distance
+				this.setFollowerDistance(feature.properties.pathDistance)
+
+				// Add location labels
+				this.markers.showLabels([feature.properties.source, feature.properties.destination])
+
+				// Set cursor
+				this.setCursor('routeHover')
+			}
 		}
+
+		
 	}
 
-	// Helper to show/hide location labels
-	showLocationLabels = (labels = null) => {
-		document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+	setCursor(type){
 
-		if(Array.isArray(labels)){
-			for(let label of labels){
-				document.querySelector(`.marker[data-name="${label}"]`).classList.add('show-label')
-			}
-		}else if(labels !== null){
-			document.querySelector(`.marker[data-name="${labels}"]`).classList.add('show-label')
+		let cursor = 'grab'
+
+		switch(type){
+			case 'routeHover':
+				cursor = this.options.route_editing.is_currently_editing ? 'crosshair' : 'default'
+				break
+			default:
+				cursor = this.options.route_editing.is_currently_editing ? 'crosshair' : 'grab'
+				break
 		}
+
+		this.map.getCanvasContainer().style.cursor = cursor
 	}
 
 	// Helpers for the follower that shows the total distance
@@ -547,168 +455,6 @@ export default class{
 		this.regenerateMap()
 	}
 
-	// Add markers from geoJSON
-	addMarkers = () => {
-
-		// Add markers for all end locations
-		for (const feature of this.mapData.locations.features) {
-			// create a HTML element for each feature
-			const el = document.createElement('div')
-			el.insertAdjacentHTML('beforeend',`<div class="label"><span class="line1">${feature.properties.name}</span><span class="line2">${feature.properties.type}</span></div>`)
-			el.className = 'marker'
-			el.dataset.name = `${feature.properties.name}`//<br>${feature.properties.type}`
-			el.dataset.type = feature.properties.type
-			el.dataset.trust = feature.properties.trust
-
-			const color = this.mapData.trusts.find(trust => trust.name == feature.properties.trust).color
-			el.style = `--tooltip-background-color: ${color}`
-			el.style.background = color
-			if(feature.properties.isHub){
-				el.classList.add('is_hub')
-			}
-			const newMarker = new mapboxgl.Marker(el).setLngLat(feature.geometry.coordinates).addTo(this.map)
-			this.mapData.markers.push(newMarker)
-
-			// Add marker interactions
-			el.addEventListener('mouseover', () => {
-				this.setUIState('locationHover', {location:feature.properties.name})
-			})
-			el.addEventListener('mouseleave', () => {
-				this.setUIState('locationLeave')
-			})
-			el.addEventListener('click', (e) => {
-
-				if(!feature.properties.isHub){
-
-					if(e.shiftKey){
-
-						// Turning into the hub!
-						const currentHub = this.mapData.locations.features.find(location => location.properties.trust == feature.properties.trust && location.properties.isHub)
-						currentHub.properties.isHub = false
-						feature.properties.isHub = true
-						this.regenerateMap({
-							centroids: false
-						})
-						this.setCentroidLocations()
-
-					}else{
-
-						// Toggling to exclude it
-						feature.properties.exclude = !feature.properties.exclude
-						el.classList.toggle('isExclude', feature.properties.exclude)
-
-						this.regenerateMap({
-							markers: false,
-							centroids: false
-						})
-						this.setCentroidLocations()
-
-					}
-
-				}
-			})
-		}
-
-		// Add markers for all waypoints
-		for (const feature of this.mapData.waypoints.features) {
-			// TODO: Merge the below into a generic DraggableWayMarker class, from which the Waynode and WayMarker are derived
-			// create a HTML element for each feature
-			const el = document.createElement('div')
-			el.className = 'marker-waypoint'
-			el.dataset.name = feature.properties.name
-			const newMarker = new mapboxgl.Marker(el,{draggable: true}).setLngLat(feature.geometry.coordinates).addTo(this.map)
-			this.mapData.markers.push(newMarker)
-
-			el.addEventListener('click', (e) => {
-				if(this.ctrlKeyHeld){
-
-				}
-			})
-
-			newMarker.on('dragstart', () => {
-			})
-
-			newMarker.on('drag', () => {
-			})
-			
-			newMarker.on('dragend', () => {
-				feature.geometry.coordinates = newMarker.getLngLat().toArray()
-			})
-		}
-
-		// Add markers for extra nodes we added
-		for (const feature of this.mapData.routes.features) {
-
-			// Do we have any waynodes?
-			if(feature.geometry.coordinates.length > 2){
-
-				// Get just the waynodes
-				const interpoints = [...feature.geometry.coordinates]
-				interpoints.shift()
-				interpoints.pop()
-
-				for (const point of interpoints) {
-
-					// Find the mapbox feature on the map corresponding to this route
-					const mapboxRouteFeatures = this.map.querySourceFeatures('routes', {
-						filter: ['==', 'id', feature.properties.id]
-					})
-					const mapboxRouteFeature = mapboxRouteFeatures[0]
-
-					// Create new Waynode and add to the map
-					const waynode = new Waynode({
-						'className': 'marker-waynode',
-						'routeID': feature.properties.id,
-						'mapboxRouteFeature': mapboxRouteFeature,
-						'setUIState': (state, opts) => this.setUIState(state, opts),
-
-						onDragStart: () => {
-							waynode.setPointIndex(feature.geometry.coordinates)
-							this.setUIState('waynodeDrag', {feature: mapboxRouteFeature})
-						},
-						onDrag: () => {
-							
-							// Snap to a waypoint, if close enough
-							waynode.snapTo(this.mapData.waypoints.features, this.featureOptions.snapDistance)
-						
-							// Update node in the coordinates for this feature
-							feature.geometry.coordinates[waynode.getPointIndex()] = waynode.getLngLat()
-
-							// Re-render
-							feature.properties.pathDistance = turf.length(feature, 'kilometers')						
-							this.regenerateMap({markers: false, centroids: false})
-
-							// Show follower
-							this.setFollowerDistance(feature.properties.pathDistance)
-						},
-						onDragEnd: () => {
-							this.setUIState('waynodeDragEnd')
-						},
-						onDelete: (waynode) => {
-							// Find the correct route for this waynode
-							const route = this.mapData.routes.features.find(route => route.properties.id == waynode.getRouteID())
-
-							// Remove the correct node
-							route.geometry.coordinates.splice(route.geometry.coordinates.findIndex(coord => (coord[0] == waynode.getLngLat()[0]) && (coord[1] == waynode.getLngLat()[1])), 1)
-
-							// Find and remove this node from the list of markers
-							this.mapData.markers.splice(this.mapData.markers.findIndex(item => item.uniqueID == waynode.getID()), 1)
-							
-							// Regen map
-							this.regenerateMap()
-						}
-					})
-
-					// Add to the map
-					waynode.addToMap(this.map, point)
-
-					// Save the waynode in list of markers
-					this.mapData.markers.push(waynode)
-				}
-			}
-		}
-	}
-
 	buildRoutes = () => {
 
 		for (const hubLocation of this.mapData.locations.features) {
@@ -732,7 +478,7 @@ export default class{
 							pathDistance: 	distance,
 							trust:			trust,
 							nodeType:		node.properties.type,
-							color: 			this.mapData.trusts.find(t => t.name == trust).color
+							color: 			this.networks.get().find(t => t.name == trust).color
 						},
 						geometry: {
 							type: 'LineString',
@@ -761,7 +507,7 @@ export default class{
 	}
 
 	// **********************************************************
-	// Update geoJSOn from updated CSV data
+	// Update geoJSON from updated CSV data
 
 	importNewLocations = (newLocations) => {
 
@@ -772,10 +518,10 @@ export default class{
 		for(let location of newLocations){
 
 			// Update Trusts list
-			this.addTrust(location.trust)
+			this.networks.add(location.trust)
 
 			// Update types list
-			this.addType(location.type)
+			this.types.add(location.type)
 
 			// Save the location if it is a unique location
 			this.addLocation(location.name, location.coordinates, {
@@ -788,34 +534,6 @@ export default class{
 		
 		// Add the nodes as markers
 		this.regenerateMap()
-	}
-
-
-	// Add a new Trust to the list
-	addTrust = (name) => {
-		const existingTrust = this.findObjectByProperty(this.mapData.trusts, "name", name)
-		if(!existingTrust){
-			this.mapData.trusts.push({
-				name: name,
-				numLocations: 1,
-				color: `hsl(${this.mapData.trusts.length*39}, 72%, 53%)`
-			})
-		}else{
-			existingTrust.numLocations = existingTrust.numLocations + 1
-		}
-	}
-
-	// Add a new type to the list
-	addType = (name) => {
-		const existingType = this.findObjectByProperty(this.mapData.types, "name", name)
-		if(!existingType){
-			this.mapData.types.push({
-				name: name,
-				numLocations: 1
-			})
-		}else{
-			existingType.numLocations = existingType.numLocations + 1
-		}
 	}
 
 	// Add a location to the list
@@ -949,6 +667,35 @@ export default class{
 		}
 		return null
 	}
+
+	countOccurrences = (array, property) => {
+		return array.reduce((counts, obj) => {
+		  // Access the property value using optional chaining
+		  const value = this.getNestedProperty(obj, property);
+	 
+		  // Handle missing or invalid property paths
+		  if (value === undefined) {
+			 return counts // Skip objects without the property
+		  }
+	 
+		  // Count occurrences based on the extracted value
+		  counts[value] = (counts[value] || 0) + 1
+		  return counts
+		}, {})
+	 }
+	 
+	 // Helper function to access nested properties with optional chaining
+	 getNestedProperty = (obj, propertyPath) => {
+		const parts = propertyPath.split('.')
+		let current = obj
+		for (const part of parts) {
+		  current = current?.[part] // Use optional chaining
+		  if (current === undefined) {
+			 return undefined // Stop if any property is missing
+		  }
+		}
+		return current
+	 }
 
 
 }

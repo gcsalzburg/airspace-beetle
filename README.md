@@ -30,3 +30,12 @@
 
 ### CSV importer
 + Check for duplicate rows
+
+
+### What we need
+1. Max will give me lat lngs on the Data 2.1 tab
+2. Add dates column from lookup of Trust name
+3. Add minimum drone range slider
+4. Plot all data from Data 2.1 and Data 3
+5. Select hospitals from which names have Hospital in them
+6. 
