@@ -60,7 +60,8 @@ export default class{
 	}
 
 	// **********************************************************
-	// Constructor, to merge in options
+	// Constructor & init functions
+
 	constructor(options){
 
 		this.options = {...this.options, ...options}
@@ -164,23 +165,6 @@ export default class{
 		})
 	}
 
-	updateMapContainer = () => {
-		this.map.resize()
-	}
-
-	// **********************************************************
-	// Getters
-
-	getGeojson = () => {
-		return {
-			type: "FeatureCollection",
-			features: [...this.mapData.routes.features, ...this.mapData.locations.features]
-		}
-	}
-
-	// **********************************************************
-	// Map stuff
-
 	// Init the layers for map
 	initMapLayers = () => {
 		this.map.addSource('routes', {type: 'geojson', data: this.mapData.routes, 'promoteId': "id"})
@@ -239,6 +223,7 @@ export default class{
 		})
 	}
 
+	// Initialise route editing features
 	initRouteEditing = () => {
 
 		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waynode effect)
@@ -246,7 +231,7 @@ export default class{
 			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
 			this.options.route_editing.is_currently_editing = this.ctrlKeyHeld
 			this.setCursor()
-	 	})
+			})
 		document.addEventListener('keyup', (e) => {
 			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
 			this.options.route_editing.is_currently_editing = this.ctrlKeyHeld
@@ -284,174 +269,14 @@ export default class{
 					this.regenerateMap()
 				}
 			}
-		 })
+		})
 	}
 
-	regenerateMap = (options) => {
+	// **********************************************************
+	// Map handlers / manipulation etc
 
-		const _options = {...{
-			networksAndTypes: false,
-			markers: true,
-			routes: true,
-			metadata: true,
-			centroids: true,
-			saveToStorage: true
-		}, ...options}
-
-		if(_options.networksAndTypes){
-			this.networks.empty()
-			this.types.empty()
-			this.buildNetworksAndTypes()
-		}
-	
-		if(_options.markers){
-			this.markers.removeFromMap()
-			this.markers.addToMap(this.mapData.locations.features, this.networks.get())
-		}
-			
-		if(_options.routes){
-			// Delete out old routes
-			this.mapData.routes.features = []
-
-			// Build routes again
-			this.buildRoutes()
-
-			// Reapply the new routes
-			this.map.on('sourcedata', this.onSourceData)
-			this.map.getSource('routes').setData(this.mapData.routes)
-		}
-
-		if(_options.metadata){	
-			// Render lists of networks and types
-			this.networks.updateCounts(this.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude), 'properties.trust'))
-			this.networks.renderDOMList()
-			this.types.renderDOMList()
-
-			this.setDroneRangeSliderBounds()
-		}
-
-		if(_options.centroids){
-			// Show centroids
-			this.createCentroids()
-		}
-
-		// Save to storage as something probably changed
-		this.saveToStorage()
-
-	}
-
-	setDroneRangeSliderBounds = () => {
-		this.options.dom.routesData.querySelector('.num-routes').innerHTML = this.mapData.routes.features.length
-
-		// Get min/max route length
-		const maxRouteLength = this.mapData.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
-		const minRouteLength = this.mapData.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity)
-
-		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(minRouteLength*10)/10} - ${Math.round(maxRouteLength*10)/10} km)`
-
-		// Set bounds of range slider
-		const sliderMax = Math.min(Math.ceil(maxRouteLength/5)*5, 50)
-		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
-	}
-
-	createCentroids = () => {
-		// TODO: Put these into their own object
-		// TODO: And make it possible to delete them when loading new CSV data too!
-	/*	for(let trust of this.networks.get()){
-			const hubLocation = this.mapData.locations.features.find(location => location.properties.isHub && location.properties.trust == trust.name)
-			
-			const centroid = new Centroid({
-				map: this.map,
-				trust: trust.name,
-				color: trust.color,
-				locations: this.mapData.locations.features.filter(location => location.properties.trust == trust.name),
-				weights: [],
-				hub: hubLocation.geometry.coordinates,
-				droneRange: this.featureOptions.droneRange
-			})
-
-			this.centroids.push(centroid)
-		}*/
-	}
-
-	highlightRoute = (feature = null) => {
-
-		// Clear highligthing
-		if(!feature){
-			if (this.hoveredRoute !== null) {
-				this.map.setFeatureState(
-					{source: 'routes', id: this.hoveredRoute},
-					{hover: false}
-				)
-				this.hoveredRoute = null
-			}
-
-			// Clear the follower
-			this.clearFollower()
-
-			// Clear location labels too
-			this.markers.showLabels()
-
-			// Reset cursor
-			this.setCursor()
-
-		}else{
-			// Apply feature state to the correct route
-			// Only do the hover if we are within the droneRange or not
-			// TODO: Make this filtering more generic
-			if(feature.properties.pathDistance < this.featureOptions.droneRange){
-
-				// Unhighlight current hovered one
-				if (this.hoveredRoute !== null) {
-					this.map.setFeatureState(
-						{source: 'routes', id: this.hoveredRoute},
-						{hover: false}
-					)
-				}
-
-				// Highlight new one
-				this.hoveredRoute = feature.id
-				this.map.setFeatureState(
-					{source: 'routes', id: feature.id},
-					{hover: true}
-				)
-
-				// Set the follower with distance
-				this.setFollowerDistance(feature.properties.pathDistance)
-
-				// Add location labels
-				this.markers.showLabels([feature.properties.source, feature.properties.destination])
-
-				// Set cursor
-				this.setCursor('routeHover')
-			}
-		}
-
-		
-	}
-
-	setCursor(type){
-
-		let cursor = 'grab'
-
-		switch(type){
-			case 'routeHover':
-				cursor = this.options.route_editing.is_currently_editing ? 'crosshair' : 'default'
-				break
-			default:
-				cursor = this.options.route_editing.is_currently_editing ? 'crosshair' : 'grab'
-				break
-		}
-
-		this.map.getCanvasContainer().style.cursor = cursor
-	}
-
-	// Helpers for the follower that shows the total distance
-	setFollowerDistance = (distance) => {
-		this.options.follower.set(`${Math.round(distance*10)/10} km`, {style: 'route'})
-	}
-	clearFollower = () => {
-		this.options.follower.clear()
+	updateMapContainer = () => {
+		this.map.resize()
 	}
 
 	zoomToLocations = () => {
@@ -459,68 +284,6 @@ export default class{
 		this.map.fitBounds(bbox,{
 			padding: 20
 		})
-	}
-
-	// Create a new waypoint
-	createWaypoint = (lngLat) => {
-		this.mapData.waypoints.features.push({
-			type: 'Feature',
-			geometry: {
-				type: 'Point',
-				coordinates: lngLat
-			},
-			properties: {
-				name: `Waypoint ${this.mapData.waypoints.features.length+1}`,
-				type: 'waypoint',
-			}
-		})
-		this.regenerateMap()
-	}
-
-	buildRoutes = () => {
-
-		for (const hubLocation of this.mapData.locations.features) {
-			if(hubLocation.properties.isHub){
-				// Only build routes to/from the hubs
-				const trust = hubLocation.properties.trust
-				const hubCoords = hubLocation.geometry.coordinates
-
-				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && location.properties.isInclude)
-
-				for(let node of nodes){
-					const nodeCoords = node.geometry.coordinates
-					const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
-					const newRoute = {
-						type: "Feature",
-						properties: {
-							id: 				Math.random()*10000,
-							source: 			hubLocation.properties.name,
-							destination: 	node.properties.name,
-							crowDistance: 	distance,
-							pathDistance: 	distance,
-							trust:			trust,
-							nodeType:		node.properties.type,
-							color: 			this.networks.get().find(t => t.name == trust).color
-						},
-						geometry: {
-							type: 'LineString',
-							coordinates: [
-								hubCoords,
-								nodeCoords,
-							]
-						}
-					}
-					this.mapData.routes.features.push(newRoute)
-				}
-			}
-		}
-	}
-
-	buildNetworksAndTypes = () => {
-		for(let location of this.mapData.locations.features){
-			this.networks.add(location.properties.trust)
-			this.types.add(location.properties.type)
-		}
 	}
 
 	// Helper function to do first call to set drone range once the route data has been loaded onto the map
@@ -534,14 +297,26 @@ export default class{
 			}, 100)
 		}
 	}
+	
+	// **********************************************************
+	// Public functions (in theory!)
+	// TODO: Set all other fns to _ prefix
+
+	getGeojson = () => {
+		return {
+			type: "FeatureCollection",
+			features: [...this.mapData.routes.features, ...this.mapData.locations.features]
+		}
+	}
 
 	empty = () => {
 		localStorage.clear()
 	}
 
 	// **********************************************************
+	// New data importing
+	
 	// Update geoJSON from updated CSV data
-
 	importNewLocations = (newLocations) => {
 
 		// Clear existing map content
@@ -602,8 +377,111 @@ export default class{
 	}
 
 	// **********************************************************
-	// Drone range handling
+	// Building & rebuilding map content
 
+	regenerateMap = (options) => {
+
+		const _options = {...{
+			networksAndTypes: false,
+			markers: true,
+			routes: true,
+			metadata: true,
+			centroids: true,
+			saveToStorage: true
+		}, ...options}
+
+		if(_options.networksAndTypes){
+			this.networks.empty()
+			this.types.empty()
+			this.buildNetworksAndTypes()
+		}
+	
+		if(_options.markers){
+			this.markers.removeFromMap()
+			this.markers.addToMap(this.mapData.locations.features, this.networks.get())
+		}
+			
+		if(_options.routes){
+			// Delete out old routes
+			this.mapData.routes.features = []
+
+			// Build routes again
+			this.buildRoutes()
+
+			// Reapply the new routes
+			this.map.on('sourcedata', this.onSourceData)
+			this.map.getSource('routes').setData(this.mapData.routes)
+		}
+
+		if(_options.metadata){	
+			// Render lists of networks and types
+			this.networks.updateCounts(this.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude), 'properties.trust'))
+			this.networks.renderDOMList()
+			this.types.renderDOMList()
+
+			this.setDroneRangeSliderBounds()
+		}
+
+		if(_options.centroids){
+			// Show centroids
+			this.createCentroids()
+		}
+
+		// Save to storage as something probably changed
+		this.saveToStorage()
+
+	}
+
+	buildRoutes = () => {
+
+		for (const hubLocation of this.mapData.locations.features) {
+			if(hubLocation.properties.isHub){
+				// Only build routes to/from the hubs
+				const trust = hubLocation.properties.trust
+				const hubCoords = hubLocation.geometry.coordinates
+
+				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && location.properties.isInclude)
+
+				for(let node of nodes){
+					const nodeCoords = node.geometry.coordinates
+					const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
+					const newRoute = {
+						type: "Feature",
+						properties: {
+							id: 				Math.random()*10000,
+							source: 			hubLocation.properties.name,
+							destination: 	node.properties.name,
+							crowDistance: 	distance,
+							pathDistance: 	distance,
+							trust:			trust,
+							nodeType:		node.properties.type,
+							color: 			this.networks.get().find(t => t.name == trust).color
+						},
+						geometry: {
+							type: 'LineString',
+							coordinates: [
+								hubCoords,
+								nodeCoords,
+							]
+						}
+					}
+					this.mapData.routes.features.push(newRoute)
+				}
+			}
+		}
+	}
+
+	buildNetworksAndTypes = () => {
+		for(let location of this.mapData.locations.features){
+			this.networks.add(location.properties.trust)
+			this.types.add(location.properties.type)
+		}
+	}
+
+	// **********************************************************
+	// Interactions to play with map content
+
+	// Drone range handling
 	setDroneRange = (range) => {
 		// Save the range
 		this.featureOptions.droneRange = parseInt(range)
@@ -621,8 +499,141 @@ export default class{
 		}
 	}
 
+	setDroneRangeSliderBounds = () => {
+		this.options.dom.routesData.querySelector('.num-routes').innerHTML = this.mapData.routes.features.length
+
+		// Get min/max route length
+		const maxRouteLength = this.mapData.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
+		const minRouteLength = this.mapData.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity)
+
+		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(minRouteLength*10)/10} - ${Math.round(maxRouteLength*10)/10} km)`
+
+		// Set bounds of range slider
+		const sliderMax = Math.min(Math.ceil(maxRouteLength/5)*5, 50)
+		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
+	}
+
+	highlightRoute = (feature = null) => {
+
+		// Clear highligthing
+		if(!feature){
+			if (this.hoveredRoute !== null) {
+				this.map.setFeatureState(
+					{source: 'routes', id: this.hoveredRoute},
+					{hover: false}
+				)
+				this.hoveredRoute = null
+			}
+
+			// Clear the follower
+			this.clearFollower()
+
+			// Clear location labels too
+			this.markers.showLabels()
+
+			// Reset cursor
+			this.setCursor()
+
+		}else{
+			// Apply feature state to the correct route
+			// Only do the hover if we are within the droneRange or not
+			// TODO: Make this filtering more generic
+			if(feature.properties.pathDistance < this.featureOptions.droneRange){
+
+				// Unhighlight current hovered one
+				if (this.hoveredRoute !== null) {
+					this.map.setFeatureState(
+						{source: 'routes', id: this.hoveredRoute},
+						{hover: false}
+					)
+				}
+
+				// Highlight new one
+				this.hoveredRoute = feature.id
+				this.map.setFeatureState(
+					{source: 'routes', id: feature.id},
+					{hover: true}
+				)
+
+				// Set the follower with distance
+				this.setFollowerDistance(feature.properties.pathDistance)
+
+				// Add location labels
+				this.markers.showLabels([feature.properties.source, feature.properties.destination])
+
+				// Set cursor
+				this.setCursor('routeHover')
+			}
+		}
+	}
+
+	setCursor(type){
+
+		let cursor = 'grab'
+
+		switch(type){
+			case 'routeHover':
+				cursor = this.options.route_editing.is_currently_editing ? 'crosshair' : 'default'
+				break
+			default:
+				cursor = this.options.route_editing.is_currently_editing ? 'crosshair' : 'grab'
+				break
+		}
+
+		this.map.getCanvasContainer().style.cursor = cursor
+	}
+
+	// Helpers for the follower that shows the total distance
+	setFollowerDistance = (distance) => {
+		this.options.follower.set(`${Math.round(distance*10)/10} km`, {style: 'route'})
+	}
+	clearFollower = () => {
+		this.options.follower.clear()
+	}
+
+	// **********************************************************
+	// Waypoints
+
+	// TODO: Move this to the markers object
+
+	// Create a new waypoint
+	createWaypoint = (lngLat) => {
+		this.mapData.waypoints.features.push({
+			type: 'Feature',
+			geometry: {
+				type: 'Point',
+				coordinates: lngLat
+			},
+			properties: {
+				name: `Waypoint ${this.mapData.waypoints.features.length+1}`,
+				type: 'waypoint',
+			}
+		})
+		this.regenerateMap()
+	}
+
 	// **********************************************************
 	// Centroids
+
+	createCentroids = () => {
+		// TODO: Put these into their own object
+		// TODO: And make it possible to delete them when loading new CSV data too!
+	/*	for(let trust of this.networks.get()){
+			const hubLocation = this.mapData.locations.features.find(location => location.properties.isHub && location.properties.trust == trust.name)
+			
+			const centroid = new Centroid({
+				map: this.map,
+				trust: trust.name,
+				color: trust.color,
+				locations: this.mapData.locations.features.filter(location => location.properties.trust == trust.name),
+				weights: [],
+				hub: hubLocation.geometry.coordinates,
+				droneRange: this.featureOptions.droneRange
+			})
+
+			this.centroids.push(centroid)
+		}*/
+	}
 
 	setCentroidWeights = (type, weight) => {
 		for(let location of this.mapData.locations.features){
@@ -647,7 +658,7 @@ export default class{
 	}
 
 	// **********************************************************
-	// localStorage
+	// localStorage handling
 
 	hasMapDataStorage = () => {
 		const loadedData = localStorage.getItem('mapData')
@@ -719,6 +730,7 @@ export default class{
 
 	// **********************************************************
 	// Generic helper functions
+	// TODO: move these to their own file
 
 	findObjectByProperty = (array, propertyPath, value) => {
 		for (let i = 0; i < array.length; i++) {
