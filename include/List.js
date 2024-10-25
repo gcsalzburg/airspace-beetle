@@ -53,4 +53,8 @@ export default class{
 			 }, '')
 		}
 	}
+
+	empty = () => {
+		this.list = []
+	}
 }

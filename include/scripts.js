@@ -8,11 +8,12 @@ import GeojsonToKml from './GeojsonToKml.js'
 
 document.addEventListener("DOMContentLoaded", async () => {
 
+
 	// **********************************************************
-	// Create new Sentry object
+	// Create new Airspace Beetle object
 
 	const csvImporter = new DataImporter({
-		isUpdated: (newData) => {
+		onNewDataReady: (newData) => {
 			myNetwork.importNewLocations(newData)
 		},
 		dom: {
@@ -43,11 +44,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 			weightsSliders: document.querySelector('.weights-sliders')
 		},
 		
-		onReady: () => {
-			csvImporter.initialLoad()
+		onHasStorageData: () => {
+			document.body.dataset.panel = 'map'
 		}
 	})
 
+	// **********************************************************
+
+	const switchView = (target) => {
+		switch(target){
+
+			case 'data':
+				document.body.dataset.panel = 'data'
+				break
+
+			case 'map':
+				document.body.dataset.panel = 'map'
+				myNetwork.updateMapContainer()
+				break
+		}
+	}
 
 	// **********************************************************
 	// Drone range slider
@@ -60,7 +76,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// **********************************************************
 	// Handle buttons
 
-	document.querySelectorAll('.panel-nav a, .options a, .code-container a, .data-stats a').forEach(link => link.addEventListener('click', async (e) => {
+	document.querySelectorAll('.panel-nav a, .panel-data a, .options a, .code-container a, .data-stats a, .map-options a').forEach(link => link.addEventListener('click', async (e) => {
 		e.preventDefault()
 
 		// Get the hash, to work out what sort of switch it is
@@ -71,12 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 		switch(hash){
 
 			case 'nav-data':
-				document.body.dataset.panel = 'data'
+				switchView('data')
 				break
 
 			case 'nav-map':
-				document.body.dataset.panel = 'map'
-				myNetwork.updateMapContainer()
+				switchView('map')
 				break
 
 			case 'toggle-width':
@@ -107,6 +122,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 			case 'hide-centroids':
 				myNetwork.toggleCentroids(false)
 				document.body.dataset.showCentroids = 'false'
+				break
+
+			case 'send-to-map':
+				csvImporter.sendToMap()
+				switchView('map')
+				break		
+				
+			case 'empty-map':
+				console.log('empty')
+				myNetwork.empty()
+				location.reload()
 				break
 		}
 	}))

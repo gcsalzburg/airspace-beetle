@@ -14,10 +14,13 @@ export default class{
 		this.options = {...this.options, ...options}
 	}
 
-	removeFromMap = () => {
+	removeFromMap = (emptyList = false) => {
 		// Clear old markers
 		for(let marker of this.list){
 			marker.remove()
+		}
+		if(emptyList){
+			this.list = []
 		}
 	}
 
@@ -36,9 +39,8 @@ export default class{
 			const color = networks.find(network => network.name == feature.properties.trust).color
 			el.style = `--tooltip-background-color: ${color}`
 			el.style.background = color
-			if(feature.properties.isHub){
-				el.classList.add('is_hub')
-			}
+			el.classList.toggle('isHub', feature.properties.isHub)
+			el.classList.toggle('isInclude', feature.properties.isInclude)
 			const newMarker = new mapboxgl.Marker(el).setLngLat(feature.geometry.coordinates).addTo(this.options.map)
 			this.list.push(newMarker)
 
@@ -60,9 +62,9 @@ export default class{
 						this.options.onHubChange(currentHub.properties.name, feature.properties.name)
 					}else{
 						// Toggling to exclude it
-						feature.properties.exclude = !feature.properties.exclude
-						el.classList.toggle('isExclude', feature.properties.exclude)
-						this.options.onToggleExclude(feature.properties.name, feature.properties.exclude)
+						feature.properties.isInclude = !feature.properties.isInclude
+						el.classList.toggle('isInclude', feature.properties.isInclude)
+						this.options.onToggleInclude(feature.properties.name, feature.properties.isInclude)
 					}
 				}
 			})

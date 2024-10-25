@@ -45,10 +45,10 @@ export default class{
 		mapbox_token: '',
 		mapbox_style: 'mapbox://styles/mapbox/light-v11',
 		mapbox_view: {
-			zoom: 10,
+			zoom: 6,
 			centre: {
-				lng: -0.164136,
-				lat: 51.569356,
+				lng: -1.544136,
+				lat: 53.869356,
 			}
 		},
 		route_editing: {
@@ -65,6 +65,7 @@ export default class{
 
 		this.options = {...this.options, ...options}
 
+		// Create a new Networks object
 		this.networks = new Networks({
 			listContainer: this.options.dom.networksList,
 			onListMouseMove: (location) => {
@@ -106,9 +107,41 @@ export default class{
 			}
 		})
 
-		// Load map
-		this.initMap()
+		// Do this early to switch to correct tab immediately
+		if(this.hasMapDataStorage()){
+			this.options.onHasStorageData()
+		}
 
+		const mapLocation = this.getMapPositionFromStorage()
+
+		// Load the Mapbox map
+		this.map = new mapboxgl.Map({
+			accessToken: this.options.mapbox_token,
+			container: this.options.dom.mapbox,
+			style: this.options.mapbox_style,
+			center: mapLocation.center ?? [this.options.mapbox_view.centre.lng, this.options.mapbox_view.centre.lat],
+			zoom: mapLocation.zoom ?? this.options.mapbox_view.zoom,
+			boxZoom: false
+		})
+
+		// Once the map has loaded
+		this.map.on('load', async () => {
+
+			// Prep mapbox layers
+			this.initMapLayers()				
+
+			// Load data from local storage
+			this.loadFromStorage()	
+		})
+
+		// Set handler for the map changing
+		this.map.on('moveend', () => {
+			if(this.mapData.locations.features.length > 0){
+				this.saveToStorage()
+			}
+		})
+
+		// Create new Markers collection
 		this.markers = new Markers({
 			map: this.map,
 			onHubChange: (oldHub, newHub) => {
@@ -120,15 +153,19 @@ export default class{
 				this.regenerateMap({centroids: false})
 				this.setCentroidLocations()
 			},
-			onToggleExclude: (locationName, isExclude) => {
+			onToggleInclude: (locationName, isInclude) => {
 
 				// Update geoJSON
-				this.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isExclude = isExclude
+				this.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isInclude = isInclude
 
 				this.regenerateMap({markers: false, centroids: false})
 				this.setCentroidLocations()
 			}
 		})
+	}
+
+	updateMapContainer = () => {
+		this.map.resize()
 	}
 
 	// **********************************************************
@@ -139,38 +176,6 @@ export default class{
 			type: "FeatureCollection",
 			features: [...this.mapData.routes.features, ...this.mapData.locations.features]
 		}
-	}
-
-	// **********************************************************
-	// Start the Airspace Beetle
-	initMap = async () => {
-
-		// Load the Mapbox map
-		this.map = new mapboxgl.Map({
-			accessToken: this.options.mapbox_token,
-			container: this.options.dom.mapbox,
-			style: this.options.mapbox_style,
-			center: [this.options.mapbox_view.centre.lng, this.options.mapbox_view.centre.lat],
-			zoom: this.options.mapbox_view.zoom,
-			boxZoom: false
-		})
-
-		// Once the map has loaded
-		this.map.on('load', async () => {
-			this.initMapLayers()				// Prep mapbox layers
-
-			this.loadFromStorage()					// Load settings from local storage
-			this.options.onReady()			// Call the ready function to load in first data
-		})
-
-		// Set handler for the map changing
-		this.map.on('moveend', () => {
-			this.saveToStorage()
-		})
-	}
-
-	updateMapContainer = () => {
-		this.map.resize()
 	}
 
 	// **********************************************************
@@ -285,12 +290,19 @@ export default class{
 	regenerateMap = (options) => {
 
 		const _options = {...{
+			networksAndTypes: false,
 			markers: true,
 			routes: true,
 			metadata: true,
 			centroids: true,
 			saveToStorage: true
 		}, ...options}
+
+		if(_options.networksAndTypes){
+			this.networks.empty()
+			this.types.empty()
+			this.buildNetworksAndTypes()
+		}
 	
 		if(_options.markers){
 			this.markers.removeFromMap()
@@ -311,7 +323,7 @@ export default class{
 
 		if(_options.metadata){	
 			// Render lists of networks and types
-			this.networks.updateCounts(this.countOccurrences(this.mapData.locations.features.filter(location => !location.properties.exclude), 'properties.trust'))
+			this.networks.updateCounts(this.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude), 'properties.trust'))
 			this.networks.renderDOMList()
 			this.types.renderDOMList()
 
@@ -440,6 +452,13 @@ export default class{
 		this.options.follower.clear()
 	}
 
+	zoomToLocations = () => {
+		const bbox = turf.bbox(this.mapData.locations)
+		this.map.fitBounds(bbox,{
+			padding: 20
+		})
+	}
+
 	// Create a new waypoint
 	createWaypoint = (lngLat) => {
 		this.mapData.waypoints.features.push({
@@ -464,7 +483,7 @@ export default class{
 				const trust = hubLocation.properties.trust
 				const hubCoords = hubLocation.geometry.coordinates
 
-				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && !location.properties.exclude)
+				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && location.properties.isInclude)
 
 				for(let node of nodes){
 					const nodeCoords = node.geometry.coordinates
@@ -495,6 +514,13 @@ export default class{
 		}
 	}
 
+	buildNetworksAndTypes = () => {
+		for(let location of this.mapData.locations.features){
+			this.networks.add(location.properties.trust)
+			this.types.add(location.properties.type)
+		}
+	}
+
 	// Helper function to do first call to set drone range once the route data has been loaded onto the map
 	onSourceData = (e) => {
 		if (e.isSourceLoaded && e.sourceDataType != 'metadata'){ // I worked out these parameter checks by inspection and guesswork, may not be stable!
@@ -507,6 +533,10 @@ export default class{
 		}
 	}
 
+	empty = () => {
+		localStorage.clear()
+	}
+
 	// **********************************************************
 	// Update geoJSON from updated CSV data
 
@@ -515,6 +545,11 @@ export default class{
 		// Clear existing map content
 		this.mapData.routes.features = []
 		this.mapData.locations.features = []
+
+		// Reset all objects
+		this.networks.empty()
+		this.types.empty()
+		this.markers.removeFromMap(true)
 
 		for(let location of newLocations){
 
@@ -535,6 +570,8 @@ export default class{
 		
 		// Add the nodes as markers
 		this.regenerateMap()
+
+		this.zoomToLocations()
 	}
 
 	// Add a location to the list
@@ -544,7 +581,7 @@ export default class{
 			const	properties = {
 				name: name,
 				centroidWeight: 1,
-				exclude: false,
+				isInclude: true,
 				...metadata
 			}
 
@@ -597,7 +634,7 @@ export default class{
 
 	setCentroidLocations = () => {
 		for(let centroid of this.centroids){
-			centroid.setLocations(this.mapData.locations.features.filter(location => location.properties.trust == centroid.getTrust() && !location.properties.exclude))
+			centroid.setLocations(this.mapData.locations.features.filter(location => location.properties.trust == centroid.getTrust() && location.properties.isInclude))
 		}
 	}
 
@@ -610,6 +647,33 @@ export default class{
 	// **********************************************************
 	// localStorage
 
+	hasMapDataStorage = () => {
+		const loadedData = localStorage.getItem('mapData')
+		if (loadedData) {
+			const loadedDataJSON = JSON.parse(loadedData)
+			if(loadedDataJSON.mapData.locations.features.length > 0){
+				return true
+			}
+		}
+		return false
+	}
+
+	getMapPositionFromStorage = () => {
+		const loadedData = localStorage.getItem('mapData')
+
+		if (loadedData) {
+			const loadedDataJSON = JSON.parse(loadedData)
+
+			if(loadedDataJSON.map){
+				return {
+					center: loadedDataJSON.map.center,
+					zoom: loadedDataJSON.map.zoom
+				}
+			}
+		}
+		return false
+	}
+
 	loadFromStorage = () => {
 
 		const loadedData = localStorage.getItem('mapData')
@@ -617,31 +681,30 @@ export default class{
 		if (loadedData) {
 			const loadedDataJSON = JSON.parse(loadedData)
 
-		//	if(loadedDataJSON.mapData){
-		//		this.mapData = loadedDataJSON.mapData
-		//		this.regenerateMap()
-		//	}
+			if(loadedDataJSON.map){
+				this.map.setCenter(loadedDataJSON.map.center)
+				this.map.setZoom(loadedDataJSON.map.zoom)
+			}
 
 			if(loadedDataJSON.featureOptions){
 				this.featureOptions = loadedDataJSON.featureOptions
 				this.setDroneRange(this.featureOptions.droneRange)
 			}
 
-			if(loadedDataJSON.map){
-				this.map.setCenter(loadedDataJSON.map.center)
-				this.map.setZoom(loadedDataJSON.map.zoom)
+			if(loadedDataJSON.mapData){
+				this.mapData = loadedDataJSON.mapData
+				this.regenerateMap({
+					networksAndTypes: true
+				})
 			}
+
 		}
 	}
 
 	saveToStorage = () => {
 
 		const dataToSave = {
-			// TODO move this save/restore bit out of the AirspaceBeetle class and into the top level at scripts.js
-			// TODO then we can decide whether to do it from CSV or the geoJSON each time
-			// TODO actually, we should just do it from the geoJSON -> if we have CSV data, we have geoJSON
-			// TODO we need to implement the lock (or parity matching) between CSV data and geoJSON then
-		//	mapData : this.mapData,
+			mapData : this.mapData,
 			featureOptions: this.featureOptions,
 			map: {
 				center: this.map.getCenter(),

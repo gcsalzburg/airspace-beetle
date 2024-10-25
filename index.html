@@ -20,7 +20,7 @@
 
 	</head>
 
-	<body data-panel="map" data-show-centroids="false">
+	<body data-panel="data" data-show-centroids="false">
 
 			<nav class="panel-nav">
 				<h1>airspace<span class="beetle">beetle</span></h1>
@@ -31,7 +31,7 @@
 			<main>
 
 				<section class="panel panel-data">
-					<h2>Imported routes</h2>
+					<h2>Paste location data to import</h2>
 					<div class="code">
 						<div class="editor">
 							<div class="line-numbers">
@@ -40,7 +40,7 @@
 							<textarea class="imported-csv"></textarea>
 						</div>
 					</div>
-					<div class="import-result import-success">Successfully imported rows: <span class="num-rows">0</span></div>
+					<div class="import-result import-success">Verified <span class="num-rows">0</span> rows<br><a href="#send-to-map" class="send-to-map">Update map with this data</a></a></div>
 					<div class="import-result import-warning">Naughty rows: <span class="num-rows">0</span><ul class="warning-details"></ul></div>
 				</section>
 
@@ -54,7 +54,9 @@
 					<section class="map-options">
 
 						<a href="#export-kml">Export kml</a> |
-						<a href="#export-geojson">Export geojson</a>
+						<a href="#export-geojson">Export geojson</a> |
+						<a href="#empty-map">Delete map data</a>
+
 	
 						<div class="data-stats">
 							<h3>Routes</h3>

@@ -257,19 +257,19 @@ main{
 	opacity: 0.15;
 }
 
-.marker.is_hub {
+.marker.isHub {
 	width: 16px;
 }
-.marker.is_hub::after{
+.marker.isHub::after{
 	width: 28px;
 	left: -6px;
 	top: -6px;
 }
 
-.marker.isExclude{
+.marker:not(.isInclude){
 	background: hsl(0, 0%, 75%) !important;
 }
-.marker.isExclude::after{
+.marker:not(.isInclude)::after{
 	background: hsl(0, 0%, 75%) !important;
 }
 
@@ -431,8 +431,8 @@ main{
 	font-variant-emoji: emoji;
 	display:block;
 	position: absolute;
-	left: 0.5em;
-	top: 0.2em;
+	left: 0.6em;
+	top: 0.6em;
 }
 .import-success::before{
 	content: "✅";
@@ -446,6 +446,18 @@ main{
 
 .import-result ul{margin: 0; padding-left: 2em;}
 .import-result li{margin: 0.7em 0;}
+
+.send-to-map{
+	display: inline-block;
+	background: var(--color-positive);
+	color: white;
+	text-decoration: none;
+	padding: 0.3em 0.6em;
+	margin: 0.5em 0;
+}
+.send-to-map:hover{
+	background: var(--color-nav-bg);
+}
 
 /* *********************************************************** */
 /* Map stats                                                   */

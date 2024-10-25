@@ -28,9 +28,9 @@ export default class{
 
 			// Update network
 			this._processData(newCSV)
-
 		})
 
+		this.initialLoad()
 	}
 
 	initialLoad = async () => {
@@ -41,9 +41,7 @@ export default class{
 
 			this.options.dom.textarea.value = savedData
 			this._generateLineNumbers(this.options.dom.textarea)
-			if(this._processData(savedData)){
-				this.options.isUpdated(this.locationsArray)
-			}
+			this._processData(savedData)
 
 		}else{
 
@@ -56,12 +54,13 @@ export default class{
 			response.then(csv => {
 				this.options.dom.textarea.innerHTML = csv
 				this._generateLineNumbers(this.options.dom.textarea)
-
-				if(this._processData(savedData)){
-					this.options.isUpdated(this.locationsArray)
-				}
+				this._processData(csv)
 			})
 		}
+	}
+
+	sendToMap = () => {
+		this.options.onNewDataReady(this.locationsArray)
 	}
 
 	// **********************************************************
@@ -81,6 +80,10 @@ export default class{
 	// TODO add check here duplicate name and/or duplicate lat/lng
 
 	_processData = (csv) => {
+
+		if(!csv || csv.length <= 0){
+			return false
+		}
 
 		// Trim incoming CSV
 		csv = csv.trim()
