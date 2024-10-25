@@ -355,7 +355,9 @@ export default class{
 	}
 
 	createCentroids = () => {
-		for(let trust of this.networks.get()){
+		// TODO: Put these into their own object
+		// TODO: And make it possible to delete them when loading new CSV data too!
+	/*	for(let trust of this.networks.get()){
 			const hubLocation = this.mapData.locations.features.find(location => location.properties.isHub && location.properties.trust == trust.name)
 			
 			const centroid = new Centroid({
@@ -369,7 +371,7 @@ export default class{
 			})
 
 			this.centroids.push(centroid)
-		}
+		}*/
 	}
 
 	highlightRoute = (feature = null) => {
