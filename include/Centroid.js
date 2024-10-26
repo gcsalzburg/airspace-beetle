@@ -60,6 +60,11 @@ export default class{
 		this.options.map.setLayoutProperty(this.options.centreHubLineName, 'visibility', 'none')
 	}
 
+	remove = () => {
+		this.options.map.removeLayer(this.options.centreHubLineName)
+		this.options.map.removeSource(this.options.centreHubLineName)
+	}
+
 	// **********************************************************
 	// Get/set
 

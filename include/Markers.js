@@ -85,7 +85,86 @@ export default class{
 	}
 
 
+
+
 /*
+
+	// Initialise route editing features
+	initRouteEditing = () => {
+
+		// Keypress capture for CTRL or COMMAND key on Mac (to enable add a waynode effect)
+		document.addEventListener('keydown', (e) => {
+			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+			this.options.route_editing.is_currently_editing = this.ctrlKeyHeld
+			this.setCursor()
+			})
+		document.addEventListener('keyup', (e) => {
+			this.ctrlKeyHeld = e.ctrlKey || e.metaKey
+			this.options.route_editing.is_currently_editing = this.ctrlKeyHeld
+			this.setCursor()
+		})
+
+		// Add click effect to map
+		this.map.on('click', (e) => {
+			if(this.options.route_editing.canEdit && !this.options.route_editing.isDragging){
+				// TODO: also prevent this if hovering a route - use this.hoveredRoute
+				this.createWaypoint(e.lngLat.toArray())
+			}
+		})
+
+		// Add click effect to route
+		this.map.on('mousedown', 'routes', (e) => {
+			if (e.features.length > 0 && this.options.route_editing.canEdit && !this.options.route_editing.isDragging){
+				// TODO: also prevent this when hovering on a waynode - use this.hoveredWaynode
+
+				// Note: we grab the feature this way, and not just with e.features[0] because for some reason the e.features[0].geometry doesn't update even when we've called setData() in regenerateMap()
+				const mapData_feature = this.mapData.routes.features.find(f => f.properties.id == e.features[0].properties.id)
+		
+				if(mapData_feature.properties.pathDistance < this.featureOptions.droneRange){
+		
+					// Split the line based on the clicked location
+					const newPoint = turf.nearestPointOnLine(mapData_feature.geometry, e.lngLat.toArray())
+					const split = turf.lineSplit(turf.lineString(mapData_feature.geometry.coordinates), newPoint)
+		
+					// Update the line geometry to have the new coordinate spliced in
+					split.features[1].geometry.coordinates.shift()
+					const newCoords = [...split.features[0].geometry.coordinates, ...split.features[1].geometry.coordinates]
+					mapData_feature.geometry.coordinates = newCoords
+		
+					// Regenerate the map
+					this.regenerateMap()
+				}
+			}
+		})
+	}
+*/
+
+	// **********************************************************
+	// Waypoints
+/*
+	// Create a new waypoint
+	createWaypoint = (lngLat) => {
+		this.mapData.waypoints.features.push({
+			type: 'Feature',
+			geometry: {
+				type: 'Point',
+				coordinates: lngLat
+			},
+			properties: {
+				name: `Waypoint ${this.mapData.waypoints.features.length+1}`,
+				type: 'waypoint',
+			}
+		})
+		this.regenerateMap()
+	}*/
+
+
+/*
+
+	// THe below code came from the addMarker code
+	//
+	//
+
 		// Add markers for all waypoints
 		for (const feature of this.mapData.waypoints.features) {
 			// TODO: Merge the below into a generic DraggableWayMarker class, from which the Waynode and WayMarker are derived
