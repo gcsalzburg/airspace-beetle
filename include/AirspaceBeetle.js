@@ -1,6 +1,5 @@
 
 import * as Utils from './Utils.js'
-import Waynode from './Waynode.js'
 import Markers from './Markers.js'
 import Networks from './Networks.js'
 import Routes from './Routes.js'
@@ -14,10 +13,6 @@ export default class{
 		locations: {
 			type: "FeatureCollection",
 			features: []					
-		},
-		waypoints: {
-			type: "FeatureCollection",
-			features: []	
 		}
 	}
 
@@ -158,7 +153,7 @@ export default class{
 				// Update geoJSON
 				Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isInclude = isInclude
 
-				this.regenerateMap({markers: false, centroids: false})
+				this.regenerateMap({centroids: false})
 				this.centroids.updateLocations(this.mapData.locations)
 			}
 		})
@@ -214,6 +209,7 @@ export default class{
 		this.centroids.empty()
 		this.markers.removeFromMap(true)
 
+		// Load in all new locations
 		for(let location of newLocations){
 
 			// Update Trusts list
