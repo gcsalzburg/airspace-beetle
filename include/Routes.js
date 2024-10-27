@@ -58,10 +58,17 @@ export default class{
 						[
 							'case',
 							['<=', ['to-number', ['get', 'pathDistance']], ['to-number', ['feature-state', 'droneRange']]],
-								["match", ["get", "nodeType"], "Hospital", 1, [
-									'case', ['boolean', ['feature-state', 'hover'], false], 1, 0.6
-								]],
-								0
+								[
+									'case',
+									['>=', ['to-number', ['get', 'pathDistance']], ['to-number', ['feature-state', 'droneMinRange']]],
+										["match", ["get", "nodeType"], "Hospital", 1, [
+											'case', ['boolean', ['feature-state', 'hover'], false], 1, 0.6
+										]],
+										0
+									],
+									0
+
+
 						],
 						0			
 				]
@@ -153,6 +160,7 @@ export default class{
 		this.options.map.on('data', (e) => {
 			if (e.sourceId === 'routes' && !this.hasLoadedDataAfterRebuild) {
 				this.setMaxRange(this.range.max)
+				this.setMinRange(this.range.min)
 				this.hasLoadedDataAfterRebuild = true
 			}
 
@@ -226,6 +234,22 @@ export default class{
 		}
 	}
 
+	setMinRange = (range) => {
+
+		// Save it for later
+		this.range.min = range
+
+		for(let feature of this.routes.features){
+			this.options.map.setFeatureState(
+				{source: 'routes', id: feature.properties.id},
+				{droneMinRange: range}
+			)
+		}
+
+	}
+
+
+
 	// **********************************************************
 
 	highlightRoute = (feature = null) => {
@@ -245,7 +269,7 @@ export default class{
 			// Apply feature state to the correct route
 			// Only do the hover if we are within the droneRange or not
 			// TODO: Make this filtering more generic
-			if(feature.properties.pathDistance < this.range.max){
+			if(feature.properties.pathDistance <= this.range.max && feature.properties.pathDistance >= this.range.min){
 				// Unhighlight current hovered one
 				if (this.hoveredRoute !== null) {
 					this.options.map.setFeatureState(

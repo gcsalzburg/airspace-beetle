@@ -23,6 +23,7 @@ export default class{
 	// Feature options
 	featureOptions = {
 		droneRange: 10,
+		droneMinRange: 0,
 		snapDistance: 0.3, // kilometers
 		weights: {
 			hospitals: 1,
@@ -191,6 +192,39 @@ export default class{
 		}
 	}
 
+	// Drone range handling
+	setDroneRange = (range) => {
+		// Save the range
+		this.featureOptions.droneRange = parseInt(range)
+
+		this.routes.setMaxRange(this.featureOptions.droneRange)
+		this.centroids.updateRange(range)
+		this.regenerateMap({
+			networksAndTypes: false,
+			markers: false,
+			routes: false,
+			metadata: true,
+			centroids: false,
+			saveToStorage: false
+		})
+	}
+	setDroneMinRange = (range) => {
+		// Save the range
+		this.featureOptions.droneMinRange = parseFloat(range)
+
+		this.routes.setMinRange(this.featureOptions.droneMinRange)
+		this.regenerateMap({
+			networksAndTypes: false,
+			markers: false,
+			routes: false,
+			metadata: true,
+			centroids: false,
+			saveToStorage: false
+		})
+	//	this.centroids.updateRange(range)
+	}
+
+
 	setMapStyle = (style) => {
 
 		// For when changing the base map
@@ -338,7 +372,11 @@ export default class{
 
 		if(_options.metadata){	
 			// Render lists of networks and types
-			this.networks.updateCounts(Utils.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude), 'properties.trust'))
+			this.calculateLocationsInRange()
+			this.networks.updateCounts(
+				Utils.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude	&& location.properties.isInRange), 'properties.trust'),
+				Utils.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude), 'properties.trust')
+			)
 			this.networks.renderDOMList()
 			this.types.renderDOMList()
 
@@ -369,15 +407,6 @@ export default class{
 
 	// **********************************************************
 	// Interactions to play with map content
-
-	// Drone range handling
-	setDroneRange = (range) => {
-		// Save the range
-		this.featureOptions.droneRange = parseInt(range)
-
-		this.routes.setMaxRange(this.featureOptions.droneRange)
-		this.centroids.updateRange(range)
-	}
 
 	setDroneRangeSliderBounds = () => {
 
@@ -413,6 +442,25 @@ export default class{
 	}
 	clearFollower = () => {
 		this.options.follower.clear()
+	}
+
+	calculateLocationsInRange = () => {
+		for (const hubLocation of this.mapData.locations.features) {
+			if(hubLocation.properties.isHub){
+				// Only build routes to/from the hubs
+				const trust = hubLocation.properties.trust
+				const hubCoords = hubLocation.geometry.coordinates
+
+				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && location.properties.isInclude)
+
+				for(let node of nodes){
+					const nodeCoords = node.geometry.coordinates
+					const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
+
+					node.properties.isInRange = (distance >= this.featureOptions.droneMinRange) && (distance <= this.featureOptions.droneRange)
+				}
+			}
+		}
 	}
 
 	// **********************************************************

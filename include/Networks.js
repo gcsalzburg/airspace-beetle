@@ -45,7 +45,7 @@ export default class extends List{
 		if(this.options.listContainer){
 			 // Update the list
 			 this.options.listContainer.innerHTML = this.list.reduce((html, item) => {
-				const itemHTML = `<div class="network isVisible" data-name="${item.name}"><span class="num" style="background-color: ${item.color}">${item.count}</span> ${item.name}</div>`
+				const itemHTML = `<div class="network isVisible" data-name="${item.name}"><span class="num" style="background-color: ${item.color}">${item.count} / ${item.total}</span> ${item.name}</div>`
 				return html + itemHTML
 			 }, '')
 		}
@@ -53,5 +53,15 @@ export default class extends List{
 
 	toggleInList = (networkName, isVisible) => {
 		document.querySelector(`.network[data-name="${networkName}"]`).classList.toggle('isVisible', isVisible)
+	}
+
+	updateCounts = (dataCounts, dataTotals) => {
+		for(let item of this.list){
+			if(dataCounts[item.name]){
+				item.count = dataCounts[item.name]
+				item.total = dataTotals[item.name]
+			}
+		}
+		this.sort()
 	}
 }

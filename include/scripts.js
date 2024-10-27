@@ -65,11 +65,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 	}
 
 	// **********************************************************
-	// Drone range slider
+	// Range sliders
 
 	document.querySelector('.drone-range-wrapper input[type="range"]').addEventListener("input", (e) => {
 		document.querySelector('.drone-range-wrapper .value').textContent = `${e.target.value} km`
 		myNetwork.setDroneRange(e.target.value)
+	})
+
+	document.querySelector('.drone-min-range-wrapper input[type="range"]').addEventListener("input", (e) => {
+		document.querySelector('.drone-min-range-wrapper .value').textContent = `${e.target.value} km`
+		myNetwork.setDroneMinRange(e.target.value)
 	})
 
 	// **********************************************************
