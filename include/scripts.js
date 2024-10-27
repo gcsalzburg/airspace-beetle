@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// **********************************************************
 	// Handle buttons
 
-	document.querySelectorAll('.panel-nav a, .panel-data a,  .map-options a').forEach(link => link.addEventListener('click', async (e) => {
+	document.querySelectorAll('.panel-nav a, .panel-data a, .map-styles a, .map-options a').forEach(link => link.addEventListener('click', async (e) => {
 		e.preventDefault()
 
 		// Get the hash, to work out what sort of switch it is

@@ -178,15 +178,16 @@ main{
 	padding: 20px;
 	height: fit-content;
 	max-height: 70%;
-	background: var(--color-page-bg);
 }
 
 .map-styles{
 	display: flex;
 	justify-content:center;
 	margin-bottom: 20px;
-	background: var(--color-page-bg);
-	width: 100%;
+	position: absolute;
+	right: 1em;
+	bottom: 1em;
+	flex-direction: column;
 }
 
 .map-styles a{
@@ -195,14 +196,19 @@ main{
 	text-indent: -9384px;
 	flex-grow: 1;
 	background: url('/assets/img/apian.svg') no-repeat center center;
-	background-size: 200%;
-	aspect-ratio: 16 / 9;
+	background-size: 100%;
+	aspect-ratio: 1;
 	box-sizing: border-box;
-	border-radius: 6px;
+	border-radius: 100%;
 	max-width: 80px;
+	width: 50px;
+	filter: saturate(2);
+}
+.map-styles a:hover{
+	border-color: var(--color-accent-1);
 }
 .map-styles a:not(:last-of-type){
-	margin-right: 5px;
+	margin-bottom: 5px;
 }
 
 .map-styles [href="#map-style-apian"]{background-image: url('/assets/img/apian.svg')}
@@ -220,7 +226,7 @@ main{
 
 .options-panel-nav{
 	display: flex;
-	border-bottom: 2px solid var(--color-accent-1);
+	border-bottom: 2px solid var(--color-nav-bg);
 }
 .options-panel-nav a{
 	text-decoration: none;
@@ -236,8 +242,8 @@ main{
 }
 
 .options-panel-detail{
-	padding:0 0.2em;
-	margin-top: 5px;
+	padding:0.5em;
+	background: var(--color-page-bg);
 }
 
 .options-panel:not([data-option="filter"]) 	.panel-filter,
@@ -251,7 +257,8 @@ main{
 .options-panel[data-option="analyse"] 	[href="#options-analyse"],
 .options-panel[data-option="edit"] 		[href="#options-edit"],
 .options-panel[data-option="export"]	[href="#options-export"]{
-	background: var(--color-accent-1);
+	background: var(--color-nav-bg);
+	color: white;
 }
 /* *********************************************************** */
 /* Markers - locations                                         */
