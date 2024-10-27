@@ -59,11 +59,15 @@ export default class{
 		// Create a new Networks object
 		this.networks = new Networks({
 			listContainer: this.options.dom.networksList,
-			onListMouseMove: (location) => {
-				this.routes.filterByNetwork(location.dataset.name)
+			onListMouseMove: (networkName) => {
+				this.routes.filterByNetwork(networkName)
 			},
 			onListMouseLeave: () => {
 				this.routes.filterByNetwork()
+			},
+			onToggleNetwork: (networkName, isVisible) => {
+				this.toggleLocationVisibility(networkName, isVisible)
+				this.regenerateMap({centroids: false})
 			}
 		})
 
@@ -277,6 +281,7 @@ export default class{
 				name: name,
 				centroidWeight: 1,
 				isInclude: true,
+				isVisible: true,
 				...metadata
 			}
 
@@ -292,6 +297,13 @@ export default class{
 		}else{
 			existingLocation.properties.numRoutes++
 		}
+	}
+
+	toggleLocationVisibility = (networkName, isVisible) => {
+		for(let location of this.mapData.locations.features.filter(location => location.properties.trust == networkName)){
+			location.properties.isVisible = isVisible
+		}
+		this.markers.toggleNetwork(networkName, isVisible)
 	}
 
 	// **********************************************************
@@ -329,6 +341,11 @@ export default class{
 			this.networks.updateCounts(Utils.countOccurrences(this.mapData.locations.features.filter(location => location.properties.isInclude), 'properties.trust'))
 			this.networks.renderDOMList()
 			this.types.renderDOMList()
+
+			// Update states in the networks list based on the state of the location of the hub
+			for(let location of this.mapData.locations.features.filter(location => location.properties.isHub)){
+				this.networks.toggleInList(location.properties.trust, location.properties.isVisible)
+			}
 
 			this.setDroneRangeSliderBounds()
 		}
@@ -419,7 +436,6 @@ export default class{
 			const loadedDataJSON = JSON.parse(loadedData)
 
 			if(loadedDataJSON.map){
-				console.log(loadedDataJSON.map)
 				return {
 					center: loadedDataJSON.map.center,
 					zoom: loadedDataJSON.map.zoom,

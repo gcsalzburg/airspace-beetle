@@ -107,7 +107,7 @@ export default class{
 
 		// Iterate over, find hubs and draw lines from there
 		for (const hubLocation of locations) {
-			if(hubLocation.properties.isHub){
+			if(hubLocation.properties.isHub && hubLocation.properties.isVisible){
 				// Only build routes to/from the hubs
 				const trust = hubLocation.properties.trust
 				const hubCoords = hubLocation.geometry.coordinates
@@ -197,6 +197,22 @@ export default class{
 		})
 	}
 
+	toggleNetwork = (network, isVisible) => {
+		// Filter routes by which ones are within range
+		const validRoutes = this.options.map.querySourceFeatures('routes', {
+			sourceLayer: 'routes',
+			filter: ['==', 'trust', network]
+		})
+
+		// For each valid route, set the feature as being within range
+		validRoutes.forEach((feature) => {
+			this.options.map.setFeatureState(
+				{source: 'routes', id: feature.id},
+				{isVisible: isVisible}
+			)
+		})
+	}
+
 	setMaxRange = (range) => {
 
 		// Save it for later
@@ -230,7 +246,6 @@ export default class{
 			// Only do the hover if we are within the droneRange or not
 			// TODO: Make this filtering more generic
 			if(feature.properties.pathDistance < this.range.max){
-
 				// Unhighlight current hovered one
 				if (this.hoveredRoute !== null) {
 					this.options.map.setFeatureState(

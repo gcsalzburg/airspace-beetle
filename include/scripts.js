@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 		dom: {
 			mapbox: document.querySelector('.map'),
-			networksList: document.querySelector('.locations-list'),
+			networksList: document.querySelector('.networks-list'),
 			routesData: document.querySelector('.routes-data'),
 			droneRangeSlider: document.querySelector('.drone-range'),
 			weightsSliders: document.querySelector('.weights-sliders')

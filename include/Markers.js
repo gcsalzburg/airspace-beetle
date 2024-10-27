@@ -41,6 +41,7 @@ export default class{
 			el.style.background = color
 			el.classList.toggle('isHub', feature.properties.isHub)
 			el.classList.toggle('isInclude', feature.properties.isInclude)
+			el.classList.toggle('isVisible', feature.properties.isVisible)
 			const newMarker = new mapboxgl.Marker(el).setLngLat(feature.geometry.coordinates).addTo(this.options.map)
 			this.list.push(newMarker)
 
@@ -81,6 +82,14 @@ export default class{
 			}
 		}else if(labels !== null){
 			document.querySelector(`.marker[data-name="${labels}"]`).classList.add('show-label')
+		}
+	}
+
+	toggleNetwork = (networkName, isVisible) => {
+		for(let marker of this.list){
+			if(marker.getElement().dataset.trust == networkName){
+				marker.getElement().classList.toggle('isVisible', isVisible)
+			}
 		}
 	}
 

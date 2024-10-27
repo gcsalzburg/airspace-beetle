@@ -19,6 +19,7 @@ export default class{
 			this.list.push({
 				name: name,
 				count: 1,
+				visible: true,
 				color: `hsl(${this.list.length*39}, 82%, 43%)`
 			})
 		}

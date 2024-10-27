@@ -347,6 +347,9 @@ main{
 .marker:not(.isInclude)::after{
 	background: hsl(0, 0%, 75%) !important;
 }
+.marker:not(.isVisible){
+	display: none;
+}
 
 /* *********************************************************** */
 /* Markers - waypoints                                         */
@@ -544,13 +547,13 @@ h3{
 	margin-bottom: 8px;
 	font-size: 1.2em;
 }
-.locations-list .location{
+.networks-list .network{
 	font-size: 0.9em;
 	margin-bottom: 0.2em;
 	cursor: default;
 	font-weight: 300;
 }
-.locations-list .num{
+.networks-list .num{
 	background: color-mix(in srgb, var(--color-primary) 70%, transparent);
 	display: inline-block;
 	padding: 0 0.3em;
@@ -558,10 +561,30 @@ h3{
 	color: white;
 	font-weight: bold;
 	font-size: 0.9em;
+	position: relative;
 }
-.locations-list .location:hover .num{
+.networks-list .network:hover .num{
 	background: var(--color-positive);
 }
+
+.networks-list .network:not(.isVisible) {
+	color: hsl(0, 0%, 80%);
+}
+.networks-list .network:not(.isVisible) .num{
+	background: hsl(0, 0%, 80%) !important;
+	opacity: 0.5;
+}
+.networks-list .network:not(.isVisible) .num::after{
+	content: "";
+	position: absolute;
+	height:3px;
+	top: 45%;
+	left: -5px;
+	right: -5px;
+	background: white;
+	transform: rotate(30deg);
+}
+
 
 .routes-length{
 	font-weight: 300;
