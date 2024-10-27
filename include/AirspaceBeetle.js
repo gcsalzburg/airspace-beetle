@@ -84,15 +84,16 @@ export default class{
 			this.options.onHasStorageData()
 		}
 
-		const mapLocation = this.getMapPositionFromStorage()
+		const mapConfig = this.getMapConfigFromStorage()
+		this.currentMapStyle = mapConfig.style ?? this.options.mapbox_style
 
 		// Load the Mapbox map
 		this.map = new mapboxgl.Map({
 			accessToken: this.options.mapbox_token,
 			container: this.options.dom.mapbox,
-			style: this.options.mapbox_style,
-			center: mapLocation.center ?? [this.options.mapbox_view.centre.lng, this.options.mapbox_view.centre.lat],
-			zoom: mapLocation.zoom ?? this.options.mapbox_view.zoom,
+			style: mapConfig.style ?? this.options.mapbox_style,
+			center: mapConfig.center ?? [this.options.mapbox_view.centre.lng, this.options.mapbox_view.centre.lat],
+			zoom: mapConfig.zoom ?? this.options.mapbox_view.zoom,
 			boxZoom: false
 		})
 
@@ -135,6 +136,7 @@ export default class{
 				this.saveToStorage()
 			}
 		})
+
 
 		// Create new Markers collection
 		this.markers = new Markers({
@@ -183,6 +185,40 @@ export default class{
 			type: "FeatureCollection",
 			features: [...this.routes.getRoutes().features, ...this.mapData.locations.features]
 		}
+	}
+
+	setMapStyle = (style) => {
+
+		// For when changing the base map
+		if(!this.hasAddedStyleLoadListener){
+			this.hasAddedStyleLoadListener = true
+			this.map.on('style.load', () => {
+				this.routes.init()
+				this.routes.drawRoutes()
+			})
+		}
+
+		switch(style){
+			case 'apian':
+				this.map.setStyle('mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw')
+				this.currentMapStyle = 'mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw'
+				break
+			case 'light':
+				this.map.setStyle('mapbox://styles/mapbox/light-v11')
+				this.currentMapStyle = 'mapbox://styles/mapbox/light-v11'
+				break
+			case 'dark':
+				this.map.setStyle('mapbox://styles/mapbox/dark-v11')
+				this.currentMapStyle = 'mapbox://styles/mapbox/dark-v11'
+				break
+			case 'satellite':
+				this.map.setStyle('mapbox://styles/mapbox/satellite-v9')
+				this.currentMapStyle = 'mapbox://styles/mapbox/satellite-v9'
+				break
+		}
+
+		this.saveToStorage()
+
 	}
 
 	empty = () => {
@@ -376,16 +412,18 @@ export default class{
 		return false
 	}
 
-	getMapPositionFromStorage = () => {
+	getMapConfigFromStorage = () => {
 		const loadedData = localStorage.getItem('mapData')
 
 		if (loadedData) {
 			const loadedDataJSON = JSON.parse(loadedData)
 
 			if(loadedDataJSON.map){
+				console.log(loadedDataJSON.map)
 				return {
 					center: loadedDataJSON.map.center,
-					zoom: loadedDataJSON.map.zoom
+					zoom: loadedDataJSON.map.zoom,
+					style: loadedDataJSON.map.style,
 				}
 			}
 		}
@@ -402,6 +440,7 @@ export default class{
 			if(loadedDataJSON.map){
 				this.map.setCenter(loadedDataJSON.map.center)
 				this.map.setZoom(loadedDataJSON.map.zoom)
+			//	this.map.setStyle(loadedDataJSON.map.style)
 			}
 
 			if(loadedDataJSON.featureOptions){
@@ -426,10 +465,10 @@ export default class{
 			featureOptions: this.featureOptions,
 			map: {
 				center: this.map.getCenter(),
-				zoom: this.map.getZoom()
+				zoom: this.map.getZoom(),
+				style: this.currentMapStyle
 			}
 		}
-	
 		localStorage.setItem('mapData', JSON.stringify(dataToSave))
 	}
 }

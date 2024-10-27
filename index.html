@@ -52,49 +52,54 @@
 
 
 					<section class="map-options">
+						<div class="map-styles">
+							<a href="#map-style-apian">apian</a>
+							<a href="#map-style-light">light</a>
+							<a href="#map-style-dark">dark</a>
+							<a href="#map-style-satellite">satellite</a>
+						</div>
 
-						<a href="#export-kml">Export kml</a> |
-						<a href="#export-geojson">Export geojson</a> |
-						<a href="#empty-map">Delete map data</a>
+						<div class="options-panel" data-option="filter">
+							<nav class="options-panel-nav">
+								<a href="#options-filter">Filter</a>
+								<a href="#options-analyse">Analyse</a>
+							<!--	<a href="#options-edit">Edit</a> -->
+								<a href="#options-export">Export</a>
+							</nav>
 
-	
-						<div class="data-stats">
-							<h3>Routes</h3>
-							<div class="routes-data">
-								<div>Total routes: <span class="num-routes">0</span> <span class="route-length"></span></div>
-								<div class="slider-wrapper drone-range-wrapper">
-									<label for="drone-range">Drone range:</label>
-									<span class="slider">
-										<input type="range" class="drone-range" id="drone-range" name="drone-range" min="0" max="10" step="1" value="10" />
-									</span>
-									<span class="value">10 km</span>
+							<div class="options-panel-detail panel-filter">
+								<div class="routes-data">
+									<div>Total routes: <span class="num-routes">0</span> <span class="route-length"></span></div>
+									<div class="slider-wrapper drone-range-wrapper">
+										<label for="drone-range">Drone range:</label>
+										<span class="slider">
+											<input type="range" class="drone-range" id="drone-range" name="drone-range" min="0" max="10" step="1" value="10" />
+										</span>
+										<span class="value">10 km</span>
+									</div>
+								</div>
+								<h3>Networks</h3>
+								<div class="locations-list"></div>
+							</div>
+							<div class="options-panel-detail panel-analyse">
+								<h3>Centroids</h3>
+								<a href="#show-centroids" class>Show</a><a href="#hide-centroids" class>Hide</a>
+								<div class="weights-sliders">
 								</div>
 							</div>
-							<h3>Networks</h3>
-							<div class="locations-list"></div>
-							<h3>Centroids</h3>
-							<a href="#show-centroids" class>Show</a><a href="#hide-centroids" class>Hide</a>
-							<div class="weights-sliders">
+							<div class="options-panel-detail panel-edit">
 							</div>
-						</div>
-					<!--	<div class="feature-options">
-							
-							<div class="route-mode-wrapper">
-								<label for="mode">Mode:</label>
-								<select name="mode" id="mode">
-									<option value="hub-spoke">Hub & spoke</option>
-									<option value="multi-hop">Multi-hop</option>
-								</select>
+							<div class="options-panel-detail panel-export">
+								<a href="#export-kml">Export kml</a>
+								<a href="#export-geojson">Export geojson</a>
+								<a href="#empty-map">Delete all map data</a>
 							</div>
-							<div class="type-colour-wrapper">
-								<label for="type-colour">Colour by type:</label>
-								<input type="checkbox" id="type-colour" name="type-colour">
-								<div class="type-colours"></div>
-							</div>
-						</div>
-						<div class="style-options">
 	
-						</div>-->
+		
+							<div class="data-stats">
+								
+							</div>
+						</div>
 					</section>
 
 				</section>				

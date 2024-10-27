@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 		mapbox_token: 'pk.eyJ1IjoiZ2NzYWx6YnVyZyIsImEiOiJjam1pNm5uZmcwMXNyM3FtNGp6dTY3MGxsIn0.PmLPkI3T8UxjEIPnz7fxEA',
 		mapbox_style: 'mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw',
-	//	mapbox_syle: 'mapbox://styles/mapbox/light-monochrome',
 
 		dom: {
 			mapbox: document.querySelector('.map'),
@@ -76,7 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	// **********************************************************
 	// Handle buttons
 
-	document.querySelectorAll('.panel-nav a, .panel-data a, .options a, .code-container a, .data-stats a, .map-options a').forEach(link => link.addEventListener('click', async (e) => {
+	document.querySelectorAll('.panel-nav a, .panel-data a,  .map-options a').forEach(link => link.addEventListener('click', async (e) => {
 		e.preventDefault()
 
 		// Get the hash, to work out what sort of switch it is
@@ -133,6 +132,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 				console.log('empty')
 				myNetwork.empty()
 				location.reload()
+				break
+
+			case 'map-style-apian':
+				myNetwork.setMapStyle('apian')
+				break
+
+			case 'map-style-light':
+				myNetwork.setMapStyle('light')
+				break
+
+			case 'map-style-dark':
+				myNetwork.setMapStyle('dark')
+				break
+
+			case 'map-style-satellite':
+				myNetwork.setMapStyle('satellite')
+				break
+
+			case 'options-filter':
+				document.querySelector('.options-panel').dataset.option = 'filter'
+				break
+
+			case 'options-analyse':
+				document.querySelector('.options-panel').dataset.option = 'analyse'
+				break
+
+			case 'options-edit':
+				document.querySelector('.options-panel').dataset.option = 'edit'
+				break
+
+			case 'options-export':
+				document.querySelector('.options-panel').dataset.option = 'export'
 				break
 		}
 	}))

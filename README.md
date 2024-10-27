@@ -3,13 +3,13 @@
 ## Todo
 
 ### Add to localstorage:
-+ All map data, locations, etc
++ ~~All map data, locations, etc~~
 + Drone range
 + Weights
-+ Map zoom and pan/centre location
++ ~~Map zoom and pan/centre location~~
 
 ### General
-+ Rationalise `networks` vs `trusts` labelling
++ ~~Rationalise `networks` vs `trusts` labelling~~
 + In networks, show the total number of locations in/out of range, number of hubs etc
 + In routes, show the totals and distances better
 
@@ -21,7 +21,7 @@
 + ~~Continually update the distance of the route when dragging~~ (show straight line distance AND full path distance)
 + Colour routes by distance along a gradient - toggle on/off
 + Make filters section, filter by drone range, by date etc
-+ Lock CSV import after you start adding points
++ ~~Lock CSV import after you start adding points~~
 + Ctrl+click to delete a node on a route
 + On the "Data" tab, add in option to upload list of all secondary locations, and then connect them to a destination if less than x (e.g. 3 miles) distance (for onward bike courier etc)
 + Do "click+drag" in one step if you add the waypoint on mousedown, not on click

@@ -26,6 +26,7 @@ export default class{
 	}
 
 	init = () => {
+
 		// Add the routes source and layer to the map
 		this.options.map.addSource('routes', {type: 'geojson', data: this.routes, 'promoteId': "id"})
 		this.options.map.addLayer({
@@ -103,7 +104,6 @@ export default class{
 	rebuildFromLocations = (locations, colors) => {
 
 		this.empty()
-		this.hasLoadedDataAfterRebuild = false
 
 		// Iterate over, find hubs and draw lines from there
 		for (const hubLocation of locations) {
@@ -142,6 +142,12 @@ export default class{
 			}
 		}
 
+		this.drawRoutes()
+	}
+
+	drawRoutes = () => {
+
+		this.hasLoadedDataAfterRebuild = false
 
 		// Reapply the new routes
 		this.options.map.on('data', (e) => {

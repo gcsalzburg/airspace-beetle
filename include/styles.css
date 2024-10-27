@@ -54,7 +54,7 @@ body{
 	min-height: 100%;
 }
 
-nav{
+.panel-nav{
 	background: var(--color-nav-bg);
 	color: white;
 	height: 80px;
@@ -76,7 +76,7 @@ h1 .beetle{
 	font-weight: 500;
 }
 
-nav > a{
+.panel-nav > a{
 	display: flex;
 	align-items: center;
 	font-weight: 300;
@@ -90,7 +90,7 @@ nav > a{
 	position: relative;
 	border-bottom: 3px solid transparent;
 }
-nav > a:not(:last-of-type)::after{
+.panel-nav > a:not(:last-of-type)::after{
 	content: "";
 	background: hsl(0, 0%, 35%);
 	display: block;
@@ -100,7 +100,7 @@ nav > a:not(:last-of-type)::after{
 	bottom:10px;
 	width: 1px; 
 }
-nav > a:hover{
+.panel-nav > a:hover{
 	border-color: var(--color-accent-1);
 }
 
@@ -110,10 +110,10 @@ nav > a:hover{
 	border-bottom-width: 5px;
 }
 
-.nav-data{
+.panel-nav a.nav-data{
 	background-image: url('/assets/img/table_icon.svg');
 }
-.nav-map{
+.panel-nav a.nav-map{
 	background-image: url('/assets/img/map.svg');
 }
 
@@ -164,6 +164,10 @@ main{
 	--dz_width: 8px;
 }
 
+/* *********************************************************** */
+/* Map options panel                                           */
+/* *********************************************************** */
+
 .map-options{
 	width: 33%;
 	max-width: 400px;
@@ -171,13 +175,84 @@ main{
 	right: 1em;
 	top: 1em;
 	bottom: 12em;
-	background: white;
-	padding: 0.7em;
-	overflow-y: scroll;
+	padding: 20px;
 	height: fit-content;
 	max-height: 70%;
+	background: var(--color-page-bg);
 }
 
+.map-styles{
+	display: flex;
+	justify-content:center;
+	margin-bottom: 20px;
+	background: var(--color-page-bg);
+	width: 100%;
+}
+
+.map-styles a{
+	display: block;
+	border: 2px solid var(--color-code-panel);
+	text-indent: -9384px;
+	flex-grow: 1;
+	background: url('/assets/img/apian.svg') no-repeat center center;
+	background-size: 200%;
+	aspect-ratio: 16 / 9;
+	box-sizing: border-box;
+	border-radius: 6px;
+	max-width: 80px;
+}
+.map-styles a:not(:last-of-type){
+	margin-right: 5px;
+}
+
+.map-styles [href="#map-style-apian"]{background-image: url('/assets/img/apian.svg')}
+.map-styles [href="#map-style-light"]{background-image: url('/assets/img/light.svg')}
+.map-styles [href="#map-style-dark"]{background-image: url('/assets/img/dark.svg')}
+.map-styles [href="#map-style-satellite"]{background-image: url('/assets/img/satellite.svg')}
+
+/* *********************************************************** */
+/* Options panel                                               */
+/* *********************************************************** */
+
+.options-panel{
+	width: 100%;
+}
+
+.options-panel-nav{
+	display: flex;
+	border-bottom: 2px solid var(--color-accent-1);
+}
+.options-panel-nav a{
+	text-decoration: none;
+	display: block;
+	color: black;
+	font-size: 1em;
+	padding: 0.2em 0.5em;
+	margin-right: 0.4em;
+	background: hsl(0, 0%, 96%);
+}
+.options-panel-nav a:hover{
+	background: hsl(0, 0%, 92%);
+}
+
+.options-panel-detail{
+	padding:0;
+	margin-top: 5px;
+}
+
+.options-panel:not([data-option="filter"]) 	.panel-filter,
+.options-panel:not([data-option="analyse"]) 	.panel-analyse,
+.options-panel:not([data-option="edit"]) 		.panel-edit,
+.options-panel:not([data-option="export"])	 .panel-export{
+	display: none;
+}
+
+.options-panel[data-option="filter"] 	[href="#options-filter"],
+.options-panel[data-option="analyse"] 	[href="#options-analyse"],
+.options-panel[data-option="edit"] 		[href="#options-edit"],
+.options-panel[data-option="export"]	[href="#options-export"]{
+	background: var(--color-accent-1);
+}
 /* *********************************************************** */
 /* Markers - locations                                         */
 /* *********************************************************** */
