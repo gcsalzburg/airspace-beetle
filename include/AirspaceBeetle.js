@@ -445,6 +445,7 @@ export default class{
 	}
 
 	calculateLocationsInRange = () => {
+		// TODO: This is duplicated in the Routes.js class, perhaps consider merging somehow?
 		for (const hubLocation of this.mapData.locations.features) {
 			if(hubLocation.properties.isHub){
 				// Only build routes to/from the hubs
