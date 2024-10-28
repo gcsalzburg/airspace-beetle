@@ -80,7 +80,7 @@ export default class{
 						location.properties.centroidWeight = weight
 					}
 				}
-				this.centroids.updateLocations(this.mapData.locations)
+			//	this.centroids.updateLocations(this.mapData.locations)
 			}
 		})
 
@@ -153,7 +153,7 @@ export default class{
 				Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", newHub).properties.isHub  = true	
 				
 				this.regenerateMap({centroids: false})
-				this.centroids.updateLocations(this.mapData.locations)
+			//	this.centroids.updateLocations(this.mapData.locations)
 			},
 			onToggleInclude: (locationName, isInclude) => {
 
@@ -161,7 +161,7 @@ export default class{
 				Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isInclude = isInclude
 
 				this.regenerateMap({centroids: false})
-				this.centroids.updateLocations(this.mapData.locations)
+			//	this.centroids.updateLocations(this.mapData.locations)
 			}
 		})
 
@@ -198,7 +198,7 @@ export default class{
 		this.featureOptions.droneRange = parseInt(range)
 
 		this.routes.setMaxRange(this.featureOptions.droneRange)
-		this.centroids.updateRange(range)
+	//	this.centroids.updateRange(range)
 		this.regenerateMap({
 			networksAndTypes: false,
 			markers: false,
@@ -260,11 +260,11 @@ export default class{
 	}
 
 	empty = () => {
-		localStorage.clear()
+		localStorage.removeItem('mapData')
 	}
 
 	toggleCentroids = (isShow = false) => {
-		this.centroids.toggle(isShow)
+	//	this.centroids.toggle(isShow)
 	}
 
 	// **********************************************************
@@ -280,7 +280,7 @@ export default class{
 		this.routes.empty()
 		this.networks.empty()
 		this.types.empty()
-		this.centroids.empty()
+	//	this.centroids.empty()
 		this.markers.removeFromMap(true)
 
 		// Load in all new locations
@@ -337,7 +337,11 @@ export default class{
 		for(let location of this.mapData.locations.features.filter(location => location.properties.trust == networkName)){
 			location.properties.isVisible = isVisible
 		}
-		this.markers.toggleNetwork(networkName, isVisible)
+		if(isVisible){
+			this.markers.addToMap(this.mapData.locations.features.filter(location => location.properties.trust == networkName), this.networks.get())
+		}else{
+			this.markers.removeFromMap()
+		}
 	}
 
 	// **********************************************************
@@ -390,7 +394,7 @@ export default class{
 
 		if(_options.centroids){
 			// Create centroids
-			this.centroids.create(this.mapData.locations, this.networks.get(), this.featureOptions.droneRange)
+		//	this.centroids.create(this.mapData.locations, this.networks.get(), this.featureOptions.droneRange)
 		}
 
 		// Save to storage as something probably changed

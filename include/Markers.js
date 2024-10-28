@@ -85,6 +85,14 @@ export default class{
 		}
 	}
 
+	removeNetwork = (networkName) => {
+		for(let marker of this.list){
+			if(marker.getElement().dataset.trust == networkName){
+				marker.remove()
+			}
+		}
+	}
+
 	toggleNetwork = (networkName, isVisible) => {
 		for(let marker of this.list){
 			if(marker.getElement().dataset.trust == networkName){

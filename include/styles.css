@@ -222,6 +222,7 @@ main{
 
 .options-panel{
 	width: 100%;
+	font-size: 14px;
 }
 
 .options-panel-nav{
@@ -233,17 +234,22 @@ main{
 	display: block;
 	color: black;
 	font-size: 1em;
-	padding: 0.2em 0.5em;
+	padding: 0.4em 0.8em;
 	margin-right: 0.4em;
 	background: hsl(0, 0%, 96%);
+	font-weight: 300;
 }
 .options-panel-nav a:hover{
 	background: hsl(0, 0%, 92%);
 }
 
 .options-panel-detail{
-	padding:0.5em;
+	padding:0.8em;
 	background: var(--color-page-bg);
+	font-weight: 300;
+}
+.options-panel-detail a:hover{
+	color: black;
 }
 
 .options-panel:not([data-option="filter"]) 	.panel-filter,
@@ -458,7 +464,7 @@ main{
 	white-space: pre;
 	overflow-wrap: normal;
 
-	height: 9999px;
+	height: 99999px;
 	line-height: 21px;
 	overflow-y: hidden;
 	padding: 0;
@@ -473,7 +479,7 @@ main{
 
 .editor .line-numbers {
 	text-align: right;
-	height: 9999px;
+	height: 99999px;
 	background: white;
 	padding: 0 8px 0 0;
 }
@@ -555,10 +561,11 @@ h3{
 	font-size: 1.2em;
 }
 .networks-list .network{
-	font-size: 0.9em;
 	margin-bottom: 0.2em;
 	cursor: default;
 	font-weight: 300;
+	overflow: hidden;
+	white-space: pre;
 }
 .networks-list .num{
 	background: color-mix(in srgb, var(--color-primary) 70%, transparent);
