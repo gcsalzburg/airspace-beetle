@@ -25,11 +25,8 @@ export default class{
 	render(){
 		this.element = document.createElement('div')
 		this.element.classList.add('slider-wrapper')
-		this.element.classList.add(`${this.options.name}-range-wrapper`)
-		this.element.innerHTML = `<label for="${this.options.name}-range">${this.options.label}</label>
-										<span class="slider">
-											<input type="range" class="${this.options.name}-range" id="${this.options.name}-range" name="${this.options.name}-range" min="${this.options.min}" max="${this.options.max}" step="${this.options.step}" value="${this.options.value}" />
-										</span>
+		this.element.innerHTML = `<label>${this.options.label}</label>
+											<input type="range" min="${this.options.min}" max="${this.options.max}" step="${this.options.step}" value="${this.options.value}" />
 										<span class="value">${this.options.value}${this.options.valueSuffix ? ' '+this.options.valueSuffix : ''}</span>`
 		this.options.container.append(this.element)
 
@@ -64,5 +61,8 @@ export default class{
 				this.setValue()
 			}
 		}
+
+		// Always do this after we change the bounds, to position the slider correctly
+		this.setValue(this.value)
 	}
 }

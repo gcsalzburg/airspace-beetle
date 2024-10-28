@@ -623,9 +623,7 @@ h3{
 }
 .slider-wrapper input[type=range]{
 	margin: 0 0.5em;
-	display: flex;
-	flex-direction: column;
-	align-items: flex-end;
+	flex-grow: 1;
 }
 
 .weights-sliders .slider-wrapper{

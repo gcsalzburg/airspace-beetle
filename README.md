@@ -4,7 +4,7 @@
 
 ### Add to localstorage:
 + ~~All map data, locations, etc~~
-+ Drone range
++ ~~Drone range~~
 + Weights
 + ~~Map zoom and pan/centre location~~
 

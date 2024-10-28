@@ -416,8 +416,13 @@ export default class{
 				this.networks.toggleInList(location.properties.trust, location.properties.isVisible)
 			}
 
-			this.setDroneRangeSliderBounds()
-			this.maxRangeSlider.setValue(this.featureOptions.droneRange)
+			// Recalculate the stats and metadata bit
+			const routeProps = this.routes.getRouteProperties()
+			this.options.dom.routesData.querySelector('.num-routes').innerHTML = routeProps.total
+			this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(routeProps.minLength*10)/10} - ${Math.round(routeProps.maxLength*10)/10} km)`
+			this.maxRangeSlider.setLimits({
+				max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
+			})
 		}
 
 		if(_options.centroids){
@@ -439,19 +444,6 @@ export default class{
 
 	// **********************************************************
 	// Interactions to play with map content
-
-	setDroneRangeSliderBounds = () => {
-
-		const routeProps = this.routes.getRouteProperties()
-
-		this.options.dom.routesData.querySelector('.num-routes').innerHTML = routeProps.total
-		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(routeProps.minLength*10)/10} - ${Math.round(routeProps.maxLength*10)/10} km)`
-
-		// Set bounds of range slider
-		this.maxRangeSlider.setLimits({
-			max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
-		})
-	}
 
 	setCursor(type){
 
