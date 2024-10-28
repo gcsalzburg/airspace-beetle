@@ -2,7 +2,8 @@ export default class{
 
 	// Default options are below
 	options = {
-		listContainer: null
+		listContainer: null,
+		onListMouseLeave: () => {}
 	}
 
 	list = []
@@ -19,7 +20,7 @@ export default class{
 			this.list.push({
 				name: name,
 				count: 1,
-				visible: true,
+				isVisible: true,
 				color: `hsl(${this.list.length*39}, 82%, 43%)`
 			})
 		}

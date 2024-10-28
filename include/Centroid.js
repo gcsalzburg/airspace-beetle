@@ -61,6 +61,7 @@ export default class{
 	}
 
 	remove = () => {
+		this.hide()
 		this.options.map.removeLayer(this.options.centreHubLineName)
 		this.options.map.removeSource(this.options.centreHubLineName)
 	}

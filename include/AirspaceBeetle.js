@@ -95,10 +95,11 @@ export default class{
 			},
 			onToggleNetwork: (networkName, isVisible) => {
 				this.toggleLocationVisibility(networkName, isVisible)
-				this.regenerateMap({centroids: false})
+				// TODO: Add/delete centroid for this network here
 			}
 		})
 
+		// TODO: Move this locationTypes bit into the centroids main class
 		this.types = new LocationTypes({
 			listContainer: this.options.dom.weightsSliders,
 			onSliderChange: (type, weight) => {
@@ -107,7 +108,7 @@ export default class{
 						location.properties.centroidWeight = weight
 					}
 				}
-			//	this.centroids.updateLocations(this.mapData.locations)
+			//	this.centroids.updateLocations(this.mapData.locations.features)
 			}
 		})
 
@@ -180,7 +181,7 @@ export default class{
 				Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", newHub).properties.isHub  = true	
 				
 				this.regenerateMap({centroids: false})
-			//	this.centroids.updateLocations(this.mapData.locations)
+			//	this.centroids.updateLocations(this.mapData.locations.features)
 			},
 			onToggleInclude: (locationName, isInclude) => {
 
@@ -188,7 +189,7 @@ export default class{
 				Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isInclude = isInclude
 
 				this.regenerateMap({centroids: false})
-			//	this.centroids.updateLocations(this.mapData.locations)
+				this.centroids.updateLocations(this.mapData.locations.features.filter(location => location.properties.isVisible))
 			}
 		})
 
@@ -290,8 +291,12 @@ export default class{
 		localStorage.removeItem('mapData')
 	}
 
-	toggleCentroids = (isShow = false) => {
-	//	this.centroids.toggle(isShow)
+	toggleCentroids = (isVisible = false) => {
+		if(isVisible){
+			this.centroids.create(this.mapData.locations.features.filter(location => location.properties.isVisible), this.networks.get().filter(network => network.isVisible), this.featureOptions.droneRange)
+		}else{
+			this.centroids.empty()
+		}
 	}
 
 	// **********************************************************
@@ -307,7 +312,7 @@ export default class{
 		this.routes.empty()
 		this.networks.empty()
 		this.types.empty()
-	//	this.centroids.empty()
+		this.centroids.empty()
 		this.markers.removeFromMap(true)
 
 		// Load in all new locations

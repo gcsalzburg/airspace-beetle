@@ -25,7 +25,7 @@ export default class extends List{
 				if(network){
 					const isVisible = !network.classList.contains('isVisible')
 					network.classList.toggle('isVisible', isVisible)
-					Utils.findObjectByProperty(this.list, "name", network.dataset.name).visible = isVisible
+					Utils.findObjectByProperty(this.list, "name", network.dataset.name).isVisible = isVisible
 					this.options.onToggleNetwork(network.dataset.name, isVisible)
 
 					if(isVisible){
