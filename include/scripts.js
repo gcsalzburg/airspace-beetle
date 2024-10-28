@@ -40,7 +40,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 			networksList: document.querySelector('.networks-list'),
 			routesData: document.querySelector('.routes-data'),
 			droneRangeSlider: document.querySelector('.drone-range'),
-			weightsSliders: document.querySelector('.weights-sliders')
+			weightsSliders: document.querySelector('.weights-sliders'),
+			filterSliders: document.querySelector('.filter-sliders')
 		},
 		
 		onHasStorageData: () => {
@@ -63,19 +64,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 				break
 		}
 	}
-
-	// **********************************************************
-	// Range sliders
-
-	document.querySelector('.drone-range-wrapper input[type="range"]').addEventListener("input", (e) => {
-		document.querySelector('.drone-range-wrapper .value').textContent = `${e.target.value} km`
-		myNetwork.setDroneRange(e.target.value)
-	})
-
-	document.querySelector('.drone-min-range-wrapper input[type="range"]').addEventListener("input", (e) => {
-		document.querySelector('.drone-min-range-wrapper .value').textContent = `${e.target.value} km`
-		myNetwork.setDroneMinRange(e.target.value)
-	})
 
 	// **********************************************************
 	// Handle buttons

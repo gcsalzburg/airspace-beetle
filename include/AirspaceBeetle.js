@@ -4,6 +4,7 @@ import Markers from './Markers.js'
 import Networks from './Networks.js'
 import Routes from './Routes.js'
 import LocationTypes from './LocationTypes.js'
+import RangeSlider from './RangeSlider.js'
 import Centroids from './Centroids.js'
 
 export default class{
@@ -56,6 +57,32 @@ export default class{
 	constructor(options){
 
 		this.options = {...this.options, ...options}
+
+		// Create new filter range sliders
+		this.maxRangeSlider = new RangeSlider({
+			container: this.options.dom.filterSliders,
+			label: 'Max range:',
+			min: 1,
+			max: 10,
+			value: 10,
+			step: 1,
+			valueSuffix: 'km',
+			onInput: (value) => {
+				this.setDroneRange(value)
+			}
+		})
+		this.minRangeSlider = new RangeSlider({
+			container: this.options.dom.filterSliders,
+			label: 'Min range:',
+			min: 0,
+			max: 5,
+			value: 0,
+			step: 0.1,
+			valueSuffix: 'km',
+			onInput: (value) => {
+				this.setDroneMinRange(value)
+			}
+		})
 
 		// Create a new Networks object
 		this.networks = new Networks({
@@ -390,6 +417,7 @@ export default class{
 			}
 
 			this.setDroneRangeSliderBounds()
+			this.maxRangeSlider.setValue(this.featureOptions.droneRange)
 		}
 
 		if(_options.centroids){
@@ -420,8 +448,9 @@ export default class{
 		this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(routeProps.minLength*10)/10} - ${Math.round(routeProps.maxLength*10)/10} km)`
 
 		// Set bounds of range slider
-		const sliderMax = Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
-		this.options.dom.droneRangeSlider.setAttribute('max', sliderMax)
+		this.maxRangeSlider.setLimits({
+			max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
+		})
 	}
 
 	setCursor(type){
@@ -514,6 +543,8 @@ export default class{
 
 			if(loadedDataJSON.featureOptions){
 				this.featureOptions = loadedDataJSON.featureOptions
+				this.maxRangeSlider.setValue(this.featureOptions.droneRange)
+				this.minRangeSlider.setValue(this.featureOptions.droneMinRange)
 				this.setDroneRange(this.featureOptions.droneRange)
 			}
 
