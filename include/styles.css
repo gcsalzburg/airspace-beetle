@@ -111,10 +111,10 @@ h1 .beetle{
 }
 
 .panel-nav a.nav-data{
-	background-image: url('/assets/img/table_icon.svg');
+	background-image: url('../assets/img/table_icon.svg');
 }
 .panel-nav a.nav-map{
-	background-image: url('/assets/img/map.svg');
+	background-image: url('../assets/img/map.svg');
 }
 
 
@@ -191,7 +191,7 @@ main{
 	border: 2px solid var(--color-code-panel);
 	text-indent: -9384px;
 	flex-grow: 1;
-	background: url('/assets/img/apian.svg') no-repeat center center;
+	background: url('../assets/img/apian.svg') no-repeat center center;
 	background-size: 100%;
 	aspect-ratio: 1;
 	box-sizing: border-box;
@@ -206,10 +206,10 @@ main{
 	margin-right: 5px;
 }
 
-.map-styles [href="#map-style-apian"]{background-image: url('/assets/img/apian.svg')}
-.map-styles [href="#map-style-light"]{background-image: url('/assets/img/light.svg')}
-.map-styles [href="#map-style-dark"]{background-image: url('/assets/img/dark.svg')}
-.map-styles [href="#map-style-satellite"]{background-image: url('/assets/img/satellite.svg')}
+.map-styles [href="#map-style-apian"]{background-image: url('../assets/img/apian.svg')}
+.map-styles [href="#map-style-light"]{background-image: url('../assets/img/light.svg')}
+.map-styles [href="#map-style-dark"]{background-image: url('../assets/img/dark.svg')}
+.map-styles [href="#map-style-satellite"]{background-image: url('../assets/img/satellite.svg')}
 
 /* *********************************************************** */
 /* Options panel                                               */
