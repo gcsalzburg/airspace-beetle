@@ -90,7 +90,7 @@ export default class{
 	// **********************************************************
 
 	getRoutes = () => {
-		return this.routes
+		return this.routes.features.filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min))
 	}
 
 	getRouteProperties = () => {
@@ -205,6 +205,8 @@ export default class{
 		})
 	}
 
+	// DEPRECATED: Now we just rebuild the whole routes object, which auto-excludes any routes not visible
+	/*
 	toggleNetwork = (network, isVisible) => {
 		// Filter routes by which ones are within range
 		const validRoutes = this.options.map.querySourceFeatures('routes', {
@@ -220,6 +222,7 @@ export default class{
 			)
 		})
 	}
+	*/
 
 	setMaxRange = (range) => {
 

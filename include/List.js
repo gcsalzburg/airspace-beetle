@@ -20,8 +20,9 @@ export default class{
 			this.list.push({
 				name: name,
 				count: 1,
+				total: 1,
 				isVisible: true,
-				color: `hsl(${this.list.length*39}, 82%, 43%)`
+				color: `hsl(${(this.list.length*39)%360}, 82%, 43%)`
 			})
 		}
 		this.sort()
@@ -35,6 +36,7 @@ export default class{
 		for(let item of this.list){
 			if(data[item.name]){
 				item.count = data[item.name]
+				item.total = data[item.name]
 			}
 		}
 		this.sort()

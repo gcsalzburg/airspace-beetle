@@ -95,6 +95,8 @@ export default class{
 			},
 			onToggleNetwork: (networkName, isVisible) => {
 				this.toggleLocationVisibility(networkName, isVisible)
+				this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
+				this.saveToStorage()
 				// TODO: Add/delete centroid for this network here
 			}
 		})
@@ -214,9 +216,24 @@ export default class{
 	// TODO: Set all other fns to _ prefix
 
 	getGeojson = () => {
+
+		// Get the data we want to return
+		const routes = this.routes.getRoutes()
+		const locations = this.mapData.locations.features.filter(location => location.properties.isInclude)
+
+		// Add simple-style properties
+		const colors = this.networks.get()
+		for(let route of routes){
+			route.properties['stroke'] = colors.find(t => t.name == route.properties.trust).color			
+		}
+		for(let location of locations){
+			location.properties['marker-color'] = colors.find(t => t.name == location.properties.trust).color			
+		}
+
+		// Return is one big featurecollection
 		return {
 			type: "FeatureCollection",
-			features: [...this.routes.getRoutes().features, ...this.mapData.locations.features]
+			features: [...routes, ...locations]
 		}
 	}
 
@@ -372,7 +389,7 @@ export default class{
 		if(isVisible){
 			this.markers.addToMap(this.mapData.locations.features.filter(location => location.properties.trust == networkName), this.networks.get())
 		}else{
-			this.markers.removeFromMap()
+			this.markers.removeNetwork(networkName)
 		}
 	}
 

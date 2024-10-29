@@ -618,12 +618,15 @@ h3{
 	align-items: center;
 }
 .slider-wrapper label{
-	overflow: hidden;
 	white-space: nowrap;
 }
 .slider-wrapper input[type=range]{
 	margin: 0 0.5em;
 	flex-grow: 1;
+	min-width: 50px;
+}
+.slider-wrapper .value{
+	white-space: nowrap;
 }
 
 .weights-sliders .slider-wrapper{

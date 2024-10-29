@@ -39,7 +39,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 			mapbox: document.querySelector('.map'),
 			networksList: document.querySelector('.networks-list'),
 			routesData: document.querySelector('.routes-data'),
-			droneRangeSlider: document.querySelector('.drone-range'),
 			weightsSliders: document.querySelector('.weights-sliders'),
 			filterSliders: document.querySelector('.filter-sliders')
 		},
@@ -92,6 +91,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 			case 'imported-data':
 				document.querySelector('textarea').focus()
+				break
+
+			case 'export-geojson':
+				exportGeoJSON(myNetwork.getGeojson())
 				break
 
 			case 'export-kml':
@@ -169,7 +172,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const helper_link = document.createElement('a')
 		helper_link.href = `data:application/geo+json;charset=utf-8,${encodeURI(JSON.stringify(geojson, null, 2))}`
 		helper_link.target = '_blank'
-		helper_link.download = `routes-builder-${Math.round(Date.now()/1000)}.geojson`
+		helper_link.download = `airspace-beetle-${Math.round(Date.now()/1000)}.geojson`
 		helper_link.click()
 	}
 })
