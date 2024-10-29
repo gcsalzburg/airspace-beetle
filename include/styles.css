@@ -174,10 +174,6 @@ main{
 	position: absolute;
 	right: 1em;
 	top: 1em;
-	bottom: 12em;
-	padding: 20px;
-	height: fit-content;
-	max-height: 70%;
 }
 
 .map-styles{
@@ -187,7 +183,7 @@ main{
 	position: absolute;
 	right: 1em;
 	bottom: 1em;
-	flex-direction: column;
+	flex-direction: row;
 }
 
 .map-styles a{
@@ -200,15 +196,14 @@ main{
 	aspect-ratio: 1;
 	box-sizing: border-box;
 	border-radius: 100%;
-	max-width: 80px;
-	width: 50px;
+	width: 40px;
 	filter: saturate(2);
 }
 .map-styles a:hover{
 	border-color: var(--color-accent-1);
 }
 .map-styles a:not(:last-of-type){
-	margin-bottom: 5px;
+	margin-right: 5px;
 }
 
 .map-styles [href="#map-style-apian"]{background-image: url('/assets/img/apian.svg')}
@@ -247,6 +242,8 @@ main{
 	padding:0.8em;
 	background: var(--color-page-bg);
 	font-weight: 300;
+	max-height: 50vh;
+   overflow: scroll;
 }
 .options-panel-detail a:hover{
 	color: black;
