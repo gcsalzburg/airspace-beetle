@@ -40,7 +40,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 		dom: {
 			mapbox: document.querySelector('.map'),
 			networksList: document.querySelector('.networks-list'),
-			routesData: document.querySelector('.routes-data'),
+			stats: {
+				routes: document.querySelector('.num-routes'),
+				locations: document.querySelector('.num-locations'),
+				networks: document.querySelector('.num-networks'),
+			},
 			weightsSliders: document.querySelector('.weights-sliders'),
 			filterSliders: document.querySelector('.filter-sliders'),
 			colourSelectors: document.querySelector('.color-selectors')
@@ -69,6 +73,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	// **********************************************************
 	// Handle buttons
+
+	document.querySelector('.chevron-divider').addEventListener('click', (e) => {
+		document.querySelector('.map-options').classList.toggle('is-expanded')
+		localStorage.setItem('optionsIsExpanded', document.querySelector('.map-options').classList.contains('is-expanded'))
+	})
+	if(localStorage.getItem('optionsIsExpanded')){
+		document.querySelector('.map-options').classList.toggle('is-expanded', localStorage.getItem('optionsIsExpanded') == 'true')
+	}
+
+	//
+	//
 
 	document.querySelectorAll('.panel-nav a, .panel-data a, .map-styles a, .map-options a').forEach(link => link.addEventListener('click', async (e) => {
 		e.preventDefault()

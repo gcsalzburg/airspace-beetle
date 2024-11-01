@@ -5,7 +5,8 @@
 :root {
 	--color-primary: rgb(11, 100, 254);
 
-	--color-nav-bg: rgb(47, 45, 46);
+	--color-nav-bg: hsl(330, 2%, 18%);
+	--color-map-options-bg: hsl(330, 2%, 28%);
 
 	--color-code-panel: hsl(0, 0%, 87%);
 	--color-positive: rgb(133, 203, 51);
@@ -18,11 +19,7 @@
 	--color-body-text: rgb(0, 0, 0);
 	--color-link: var(--color-primary);
 
-	--color-accent-1: rgb(246, 249, 48);
-	--color-accent-2: #21897E;
-	--color-accent-3: #D2F898;
-	--color-accent-4: #FCFCFC;
-	--color-accent-5: #2F2D2E;
+	--color-accent: rgb(246, 249, 48);
 }
 
 
@@ -101,12 +98,12 @@ h1 .beetle{
 	width: 1px; 
 }
 .panel-nav > a:hover{
-	border-color: var(--color-accent-1);
+	border-color: var(--color-accent);
 }
 
 [data-panel="data"] .nav-data,
 [data-panel="map"] .nav-map{
-	border-color: var(--color-accent-1);
+	border-color: var(--color-accent);
 	border-bottom-width: 5px;
 }
 
@@ -172,8 +169,9 @@ main{
 	width: 33%;
 	max-width: 400px;
 	position: absolute;
-	right: 1em;
-	top: 1em;
+	right: 0em;
+	top: 0em;
+	background: var(--color-map-options-bg);
 }
 
 .map-styles{
@@ -200,7 +198,7 @@ main{
 	filter: saturate(2);
 }
 .map-styles a:hover{
-	border-color: var(--color-accent-1);
+	border-color: var(--color-accent);
 }
 .map-styles a:not(:last-of-type){
 	margin-right: 5px;
@@ -212,26 +210,123 @@ main{
 .map-styles [href="#map-style-satellite"]{background-image: url('../assets/img/satellite.svg')}
 
 /* *********************************************************** */
+/* Stats section                                               */
+/* *********************************************************** */
+
+.stats{
+	display: flex;
+	background: var(--color-map-options-bg);
+	color: white;
+	justify-content: space-between;
+	padding: 1em 1em 1em 2em;
+}
+.stat{
+	display: flex;
+	flex-direction: column;
+	width: calc(33% - 1em);
+	align-items: flex-start;
+}
+.stat-number{
+	font-size: 28px;
+	font-weight: 500;
+	line-height: 1.2em;
+}
+.stat-text{
+	font-size: 15px;
+}
+
+/* *********************************************************** */
+/* Chevron divider section                                     */
+/* *********************************************************** */
+
+.chevron-divider{
+	background: var(--color-map-options-bg);
+	position: relative;
+	padding: 0;
+	cursor: pointer;
+	overflow: hidden;
+}
+.chevron-divider::before, .chevron-divider::after{
+	content:"";
+	height:1px;
+	left: 1em;
+	top: 2px;
+	right:calc(50% + 10px);
+	background: rgba(255,255,255,0.4);
+	position: absolute;
+	transition: all 0.15s ease-out;
+}
+.chevron-divider::after{
+	left: calc(50% + 10px);
+	right:1em;
+}
+.chevron {
+	position:relative;
+	display:block;
+	height:12px; /*Height should be double border thickness*/
+	left: calc(50% - 6px);
+	transform-origin: 6px 3px;
+	transition: all 0.15s ease-out;
+	transform: rotate(180deg);
+}
+.chevron::before,
+.chevron::after {
+	position:absolute;
+	display:block;
+	content:"";
+	border:6px solid transparent; /*Adjust chevron size*/
+}
+/*Change the four instances of 'top' below to rotate chevron*/
+/*Use (top/right/bottom/left) where you want the back of the chevron to be*/
+.chevron::before {
+	top:0;
+	border-top-color:rgba(255,255,255,0.4); /*Chevron Color*/
+}
+.chevron::after {
+	top:-1px; /*Adjust thickness*/
+	border-top-color:var(--color-map-options-bg); /*Match chevron background colour*/
+}
+
+.chevron-divider:hover::before, .chevron-divider:hover::after{
+	background-color: var(--color-accent);
+}
+.chevron-divider:hover .chevron::before{
+	border-top-color:var(--color-accent);
+}
+.map-options:not(.is-expanded) .chevron{
+	transform: rotate(0deg);
+}
+
+/* *********************************************************** */
 /* Options panel                                               */
 /* *********************************************************** */
 
 .options-panel{
-	width: 100%;
+	width: calc(100% - 2em);
 	font-size: 14px;
+	margin: 1em;
+	background: var(--color-map-options-bg);
+	overflow: hidden;
+	height: auto;
+}
+
+.map-options:not(.is-expanded) .options-panel{
+	height: 0px;
+	margin-bottom: 0px;
 }
 
 .options-panel-nav{
 	display: flex;
 	align-items: flex-end;
+	border-bottom: 1px solid var(--color-accent);
 }
 .options-panel-nav a{
 	text-decoration: none;
 	display: block;
-	color: black;
+	color: white;
 	font-size: 1em;
 	padding: 0.35em 0.8em 0.25em;
 	margin-right: 0.4em;
-	background: hsl(0, 0%, 85%);
 	font-weight: 300;
 }
 .options-panel-nav a:hover{
@@ -239,11 +334,12 @@ main{
 }
 
 .options-panel-detail{
-	padding:0.8em;
-	background: var(--color-page-bg);
 	font-weight: 300;
 	max-height: 50vh;
    overflow-y: scroll;
+	color: white;
+	margin-top: 1em;
+   padding-right: 1em;
 }
 .options-panel-detail a:hover{
 	color: black;
@@ -262,10 +358,75 @@ main{
 .options-panel[data-option="analyse"] 	[href="#options-analyse"],
 .options-panel[data-option="edit"] 		[href="#options-edit"],
 .options-panel[data-option="export"]	[href="#options-export"]{
-	background: white;
+	background: var(--color-accent);
 	color: black;
 	padding-bottom: 0.35em;
 }
+
+.color-selector-warning{
+	background: var(--color-accent);
+	color: black;
+	padding: 0.5em 1em;
+	margin: 1em 0;
+}
+.color-selector-warning:not(.show){
+	display: none;
+}
+
+/* Scrollbar design */ 
+*::-webkit-scrollbar{
+	height: 10px;
+	width: 8px;
+}
+*::-webkit-scrollbar-track{
+	border-radius: 5px;
+	background-color: var(--color-map-options-bg);
+}
+*::-webkit-scrollbar-track:hover{
+	background-color: var(--color-map-options-bg);
+}
+*::-webkit-scrollbar-track:active{
+	background-color: var(--color-nav-bg);
+}
+*::-webkit-scrollbar-thumb{
+	border-radius: 5px;
+	background-color: var(--color-nav-bg);
+}
+*::-webkit-scrollbar-thumb:hover{
+	background-color: var(--color-accent);
+}
+*::-webkit-scrollbar-thumb:active{
+	background-color: var(--color-accent);
+}
+
+
+/* *********************************************************** */
+/* Selectors                                                   */
+/* *********************************************************** */
+
+.select-wrapper{
+	display: flex;
+	margin:0.5em 0;
+}
+.select-wrapper label{
+	min-width: 30%;
+	flex-grow: 1;
+}
+.select-wrapper select{
+	padding: 0.4em 0.8em 0.4em 0.4em;
+	background: var(--color-map-options-bg);
+	color: white;
+	border-radius: 4px;
+	outline: none;
+}
+.select-wrapper select:hover{
+	background: var(--color-nav-bg);
+}
+.select-wrapper select:focus{
+	background: var(--color-accent);
+	color: black;
+}
+
 /* *********************************************************** */
 /* Markers - locations                                         */
 /* *********************************************************** */

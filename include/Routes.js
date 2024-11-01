@@ -100,9 +100,10 @@ export default class{
 
 	getRouteProperties = () => {
 		return {
-			total: 		this.routes.features.length,
-			minLength: 	this.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity),
-			maxLength: 	this.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
+			total: 			this.routes.features.length,
+			totalInRange:	this.routes.features.filter(feature => feature.properties.pathDistance <= this.range.max && feature.properties.pathDistance >= this.range.min).length,
+			minLength: 		this.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity),
+			maxLength: 		this.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
 		}
 	}
 

@@ -488,8 +488,11 @@ export default class{
 
 			// Recalculate the stats and metadata bit
 			const routeProps = this.routes.getRouteProperties()
-			this.options.dom.routesData.querySelector('.num-routes').innerHTML = routeProps.total
-			this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(routeProps.minLength*10)/10} - ${Math.round(routeProps.maxLength*10)/10} km)`
+			this.options.dom.stats.routes.innerHTML = routeProps.totalInRange
+			this.options.dom.stats.networks.innerHTML = this.networks.get().length
+			this.options.dom.stats.locations.innerHTML = this.mapData.locations.features.filter(location => location.properties.isInclude).length
+
+			//this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(routeProps.minLength*10)/10} - ${Math.round(routeProps.maxLength*10)/10} km)`
 			this.maxRangeSlider.setLimits({
 				max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
 			})
