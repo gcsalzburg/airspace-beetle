@@ -110,22 +110,36 @@ export default class{
 	setColorMode = (newColorMode = this.colorMode) => {
 
 		this.colorMode = newColorMode
+
+		let newColorString = ''
 		
 		for(let marker of this.list){
 			const el = marker.getElement()
 
+			if(newColorMode != 'none'){
+				el.classList.remove('hide')
+			}
+
 			switch(newColorMode){
 				case 'network':					
-					el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', el.dataset.trustColor)
+					newColorString = el.dataset.trustColor
 					break
 				case 'blue':					
-					el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', '#005EB8')
+					newColorString = '#005EB8'
+					break
+				case 'ghost':
+					newColorString = 'rgba(255,255,255,0)'
+					break
+				case 'none':
+					el.classList.add('hide')
 					break
 				case 'yellow':	
 				default:				
-					el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', '#ffc03a')
+					newColorString = '#ffc03a'
 					break
 			}
+
+			el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', newColorString)
 		}
 	}
 

@@ -284,6 +284,12 @@ export default class{
 			case 'blue':
 				paintProperty = '#005EB8'
 				break
+			case 'ghost':
+				paintProperty = 'rgba(255,255,255,0.3)'
+				break
+			case 'none':
+				paintProperty = 'rgba(255,255,255,0)'
+				break
 			case 'yellow':
 			default:
 				paintProperty = '#ffc03a'

@@ -222,20 +222,20 @@ main{
 
 .options-panel-nav{
 	display: flex;
-	border-bottom: 2px solid var(--color-nav-bg);
+	align-items: flex-end;
 }
 .options-panel-nav a{
 	text-decoration: none;
 	display: block;
 	color: black;
 	font-size: 1em;
-	padding: 0.4em 0.8em;
+	padding: 0.35em 0.8em 0.25em;
 	margin-right: 0.4em;
-	background: hsl(0, 0%, 96%);
+	background: hsl(0, 0%, 85%);
 	font-weight: 300;
 }
 .options-panel-nav a:hover{
-	background: hsl(0, 0%, 92%);
+	padding-bottom: 0.35em;
 }
 
 .options-panel-detail{
@@ -262,8 +262,9 @@ main{
 .options-panel[data-option="analyse"] 	[href="#options-analyse"],
 .options-panel[data-option="edit"] 		[href="#options-edit"],
 .options-panel[data-option="export"]	[href="#options-export"]{
-	background: var(--color-nav-bg);
-	color: white;
+	background: white;
+	color: black;
+	padding-bottom: 0.35em;
 }
 /* *********************************************************** */
 /* Markers - locations                                         */
@@ -280,9 +281,10 @@ main{
 	border-radius: 50%;
 	cursor: default;
 	aspect-ratio: 1;
-	box-shadow: 0px 0px 5px 0px white;
+	box-shadow: 0px 0px 5px 0px rgba(255,255,255,0.5);
 	position: relative;
 }
+
 .marker > .label{
 	display: block;
 	position: absolute;
@@ -353,14 +355,19 @@ main{
 	top: -6px;
 }
 
-.marker:not(.isInclude){
+.marker:not(.isInclude):not(.hide){
 	background: hsl(0, 0%, 75%) !important;
 }
-.marker:not(.isInclude)::after{
+.marker:not(.isInclude):not(.hide)::after{
 	background: hsl(0, 0%, 75%) !important;
 }
 .marker:not(.isVisible){
 	display: none;
+}
+
+.marker.hide{
+	box-shadow: none;
+	background: none;
 }
 
 /* *********************************************************** */

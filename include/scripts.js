@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const csvImporter = new DataImporter({
 		onNewDataReady: (newData) => {
 			myNetwork.importNewLocations(newData)
+			document.querySelector('.options-panel').dataset.option = 'view'
+			localStorage.setItem('optionsView', 'view')
 		},
 		dom: {
 			textarea: document.querySelector('.imported-csv'),

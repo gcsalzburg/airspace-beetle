@@ -27,6 +27,7 @@
 + Do "click+drag" in one step if you add the waypoint on mousedown, not on click
 + Add arrows to show direction of travel along each route
 + Display coordinates for waypoint when hovering
++ Calculate "idealHub" vs. "user defined" hub and toggle between the two on the Analysis tab
 
 ### CSV importer
 + Check for duplicate rows

@@ -90,8 +90,10 @@ export default class{
 		// Create colour selectors
 		this.routeColorSelect = new Select({
 			container: this.options.dom.colourSelectors,
-			label: 'Route colour:',
+			label: 'Route display:',
 			options: [
+				{name: 'None', 			value: 'none'},
+				{name: 'Ghost', 			value: 'ghost'},
 				{name: 'Blue', 			value: 'blue'},
 				{name: 'Yellow', 			value: 'yellow'},
 				{name: 'By network', 	value: 'network', selected: true},
@@ -103,8 +105,10 @@ export default class{
 		})
 		this.markerColorSelect = new Select({
 			container: this.options.dom.colourSelectors,
-			label: 'Marker colour:',
+			label: 'Marker display:',
 			options: [
+				{name: 'None', 			value: 'none'},
+				{name: 'Ghost', 			value: 'ghost'},
 				{name: 'Blue', 			value: 'blue'},
 				{name: 'Yellow', 			value: 'yellow'},
 				{name: 'By network', 	value: 'network', selected: true},
