@@ -88,6 +88,17 @@ export default class{
 		})
 
 		// Create colour selectors
+		this.markerSizeSelect = new Select({
+			container: this.options.dom.colourSelectors,
+			label: 'Marker size:',
+			options: [
+				{name: 'Mini', 			value: 'mini'},
+				{name: 'Normal', 			value: 'normal'},
+			],
+			onChange: (colorMode) => {
+				// TODO: Toggle page class & save to localStorage
+			}
+		})
 		this.markerColorSelect = new Select({
 			container: this.options.dom.colourSelectors,
 			label: 'Marker display:',

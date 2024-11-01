@@ -183,6 +183,7 @@ main{
 	right: 1em;
 	bottom: 1em;
 	flex-direction: row;
+	z-index: 100000;
 }
 
 .map-styles a{
@@ -803,6 +804,11 @@ h3{
 }
 .slider-wrapper .value{
 	white-space: nowrap;
+}
+
+.filter-sliders{
+	border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+	margin-bottom: 1em;
 }
 
 .weights-sliders .slider-wrapper{
