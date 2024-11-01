@@ -5,8 +5,8 @@
 :root {
 	--color-primary: rgb(11, 100, 254);
 
-	--color-nav-bg: hsl(330, 2%, 18%);
-	--color-map-options-bg: hsl(330, 2%, 28%);
+	--color-dark-primary: hsl(330, 2%, 18%);
+	--color-dark-secondary: hsl(330, 2%, 28%);
 
 	--color-code-panel: hsl(0, 0%, 87%);
 	--color-positive: rgb(133, 203, 51);
@@ -52,7 +52,7 @@ body{
 }
 
 .panel-nav{
-	background: var(--color-nav-bg);
+	background: var(--color-dark-primary);
 	color: white;
 	height: 80px;
 	display: flex;
@@ -171,7 +171,8 @@ main{
 	position: absolute;
 	right: 0em;
 	top: 0em;
-	background: var(--color-map-options-bg);
+	background: var(--color-dark-secondary);
+	z-index: 100000;
 }
 
 .map-styles{
@@ -193,7 +194,7 @@ main{
 	background-size: 100%;
 	aspect-ratio: 1;
 	box-sizing: border-box;
-	border-radius: 100%;
+	border-radius: 12px;
 	width: 40px;
 	filter: saturate(2);
 }
@@ -215,7 +216,7 @@ main{
 
 .stats{
 	display: flex;
-	background: var(--color-map-options-bg);
+	background: var(--color-dark-secondary);
 	color: white;
 	justify-content: space-between;
 	padding: 1em 1em 1em 2em;
@@ -240,7 +241,7 @@ main{
 /* *********************************************************** */
 
 .chevron-divider{
-	background: var(--color-map-options-bg);
+	background: var(--color-dark-secondary);
 	position: relative;
 	padding: 0;
 	cursor: pointer;
@@ -284,7 +285,7 @@ main{
 }
 .chevron::after {
 	top:-1px; /*Adjust thickness*/
-	border-top-color:var(--color-map-options-bg); /*Match chevron background colour*/
+	border-top-color:var(--color-dark-secondary); /*Match chevron background colour*/
 }
 
 .chevron-divider:hover::before, .chevron-divider:hover::after{
@@ -305,7 +306,7 @@ main{
 	width: calc(100% - 2em);
 	font-size: 14px;
 	margin: 1em;
-	background: var(--color-map-options-bg);
+	background: var(--color-dark-secondary);
 	overflow: hidden;
 	height: auto;
 }
@@ -373,6 +374,10 @@ main{
 	display: none;
 }
 
+/* Links */
+.options-panel a{color: white;}
+.options-panel a:hover{color: var(--color-accent);}
+
 /* Scrollbar design */ 
 *::-webkit-scrollbar{
 	height: 10px;
@@ -380,17 +385,17 @@ main{
 }
 *::-webkit-scrollbar-track{
 	border-radius: 5px;
-	background-color: var(--color-map-options-bg);
+	background-color: var(--color-dark-secondary);
 }
 *::-webkit-scrollbar-track:hover{
-	background-color: var(--color-map-options-bg);
+	background-color: var(--color-dark-secondary);
 }
 *::-webkit-scrollbar-track:active{
-	background-color: var(--color-nav-bg);
+	background-color: var(--color-dark-primary);
 }
 *::-webkit-scrollbar-thumb{
 	border-radius: 5px;
-	background-color: var(--color-nav-bg);
+	background-color: var(--color-dark-primary);
 }
 *::-webkit-scrollbar-thumb:hover{
 	background-color: var(--color-accent);
@@ -414,13 +419,13 @@ main{
 }
 .select-wrapper select{
 	padding: 0.4em 0.8em 0.4em 0.4em;
-	background: var(--color-map-options-bg);
+	background: var(--color-dark-secondary);
 	color: white;
 	border-radius: 4px;
 	outline: none;
 }
 .select-wrapper select:hover{
-	background: var(--color-nav-bg);
+	background: var(--color-dark-primary);
 }
 .select-wrapper select:focus{
 	background: var(--color-accent);
@@ -523,7 +528,11 @@ main{
 	background: hsl(0, 0%, 75%) !important;
 }
 .marker:not(.isVisible){
-	display: none;
+	opacity: 0.1 !important;
+	filter: grayscale(100%);
+}
+.marker.isVisible{
+	z-index: 5000;
 }
 
 .marker.hide{
@@ -714,7 +723,7 @@ main{
 	margin: 0.5em 0;
 }
 .send-to-map:hover{
-	background: var(--color-nav-bg);
+	background: var(--color-dark-primary);
 }
 
 /* *********************************************************** */

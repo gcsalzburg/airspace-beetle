@@ -104,6 +104,20 @@ export default class{
 		}
 	}
 
+	filterByNetwork = (networkName = null) => {
+
+		if(!networkName){
+			for(let marker of this.list){
+					marker.getElement().classList.add('isVisible')
+			}
+			return
+		}
+
+		for(let marker of this.list){
+			marker.getElement().classList.toggle('isVisible', (marker.getElement().dataset.trust == networkName))
+		}
+	}
+
 	// **********************************************************
 	// Toggle the colour mode
 

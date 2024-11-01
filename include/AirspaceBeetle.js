@@ -88,21 +88,6 @@ export default class{
 		})
 
 		// Create colour selectors
-		this.routeColorSelect = new Select({
-			container: this.options.dom.colourSelectors,
-			label: 'Route display:',
-			options: [
-				{name: 'None', 			value: 'none'},
-				{name: 'Ghost', 			value: 'ghost'},
-				{name: 'Blue', 			value: 'blue'},
-				{name: 'Yellow', 			value: 'yellow'},
-				{name: 'By network', 	value: 'network', selected: true},
-				{name: 'By length', 		value: 'length'}
-			],
-			onChange: (colorMode) => {
-				this.setRouteColor(colorMode)
-			}
-		})
 		this.markerColorSelect = new Select({
 			container: this.options.dom.colourSelectors,
 			label: 'Marker display:',
@@ -118,14 +103,31 @@ export default class{
 				this.setMarkerColor(colorMode)
 			}
 		})
+		this.routeColorSelect = new Select({
+			container: this.options.dom.colourSelectors,
+			label: 'Route display:',
+			options: [
+				{name: 'None', 			value: 'none'},
+				{name: 'Ghost', 			value: 'ghost'},
+				{name: 'Blue', 			value: 'blue'},
+				{name: 'Yellow', 			value: 'yellow'},
+				{name: 'By network', 	value: 'network', selected: true},
+				{name: 'By length', 		value: 'length'}
+			],
+			onChange: (colorMode) => {
+				this.setRouteColor(colorMode)
+			}
+		})
 
 		// Create a new Networks object
 		this.networks = new Networks({
 			listContainer: this.options.dom.networksList,
 			onListMouseMove: (networkName) => {
+				this.markers.filterByNetwork(networkName)
 				this.routes.filterByNetwork(networkName)
 			},
 			onListMouseLeave: () => {
+				this.markers.filterByNetwork()
 				this.routes.filterByNetwork()
 			},
 			onToggleNetwork: (networkName, isVisible) => {
