@@ -16,6 +16,8 @@ export default class{
 		min: 0
 	}
 
+	colorMode = 'network'
+
 	hasLoadedDataAfterRebuild = false
 
 	// **********************************************************
@@ -74,6 +76,9 @@ export default class{
 				]
 			}
 		})
+
+		// We have to call this to preserve the change when changing background map styles
+		this.setColorMode()
 
 		// Add hover effects to routes
 		this.options.map.on('mousemove', 'routes', (e) => {
@@ -235,6 +240,10 @@ export default class{
 				{droneRange: range}
 			)
 		}
+
+		if(this.colorMode == 'length'){
+			this.setColorMode()
+		}
 	}
 
 	setMinRange = (range) => {
@@ -251,7 +260,38 @@ export default class{
 
 	}
 
+	// **********************************************************
+	// Toggle the colour mode
 
+	setColorMode = (newColorMode = this.colorMode) => {
+
+		this.colorMode = newColorMode
+		let paintProperty = ''
+
+		switch(newColorMode){
+			case 'network':
+				paintProperty = ['get', 'color']
+				break
+			case 'length':
+				paintProperty = [
+					'interpolate-hcl',
+						['exponential', 1.5],
+						['get', 'pathDistance'],
+						this.range.min, '#00ff00',   // Red
+						this.range.max, '#ff0000'  // Green
+				]
+				break
+			case 'blue':
+				paintProperty = '#005EB8'
+				break
+			case 'yellow':
+			default:
+				paintProperty = '#ffc03a'
+				break
+		}
+
+		this.options.map.setPaintProperty('routes', 'line-color', paintProperty)
+	}
 
 	// **********************************************************
 

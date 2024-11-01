@@ -5,6 +5,7 @@ import Networks from './Networks.js'
 import Routes from './Routes.js'
 import LocationTypes from './LocationTypes.js'
 import RangeSlider from './RangeSlider.js'
+import Select from './Select.js'
 import Centroids from './Centroids.js'
 
 export default class{
@@ -29,7 +30,9 @@ export default class{
 		weights: {
 			hospitals: 1,
 			others: 1
-		}
+		},
+		routeColor: 'network',
+		markerColor: 'network'
 	}
  
 	// Default options are below
@@ -81,6 +84,34 @@ export default class{
 			valueSuffix: 'km',
 			onInput: (value) => {
 				this.setDroneMinRange(value)
+			}
+		})
+
+		// Create colour selectors
+		this.routeColorSelect = new Select({
+			container: this.options.dom.colourSelectors,
+			label: 'Route colour:',
+			options: [
+				{name: 'Blue', 			value: 'blue'},
+				{name: 'Yellow', 			value: 'yellow'},
+				{name: 'By network', 	value: 'network', selected: true},
+				{name: 'By length', 		value: 'length'}
+			],
+			onChange: (colorMode) => {
+				this.setRouteColor(colorMode)
+			}
+		})
+		this.markerColorSelect = new Select({
+			container: this.options.dom.colourSelectors,
+			label: 'Marker colour:',
+			options: [
+				{name: 'Blue', 			value: 'blue'},
+				{name: 'Yellow', 			value: 'yellow'},
+				{name: 'By network', 	value: 'network', selected: true},
+				{name: 'By type', 		value: 'type'}
+			],
+			onChange: (colorMode) => {
+				this.setMarkerColor(colorMode)
 			}
 		})
 
@@ -269,6 +300,18 @@ export default class{
 	//	this.centroids.updateRange(range)
 	}
 
+	setRouteColor = (colorMode) => {
+		this.featureOptions.routeColor = colorMode
+		this.routes.setColorMode(colorMode)
+		this.saveToStorage()
+	}
+
+	setMarkerColor = (colorMode) => {
+		this.featureOptions.markerColor = colorMode
+		this.markers.setColorMode(colorMode)
+		this.saveToStorage()
+	}
+
 
 	setMapStyle = (style) => {
 
@@ -416,6 +459,7 @@ export default class{
 		if(_options.markers){
 			this.markers.removeFromMap()
 			this.markers.addToMap(this.mapData.locations.features, this.networks.get())
+			this.markers.setColorMode(this.featureOptions.markerColor)
 		}
 			
 		if(_options.routes){
@@ -557,9 +601,14 @@ export default class{
 
 			if(loadedDataJSON.featureOptions){
 				this.featureOptions = loadedDataJSON.featureOptions
+
 				this.maxRangeSlider.setValue(this.featureOptions.droneRange)
 				this.minRangeSlider.setValue(this.featureOptions.droneMinRange)
+				this.routeColorSelect.setValue(this.featureOptions.routeColor)
+				this.markerColorSelect.setValue(this.featureOptions.markerColor)
+
 				this.setDroneRange(this.featureOptions.droneRange)
+				this.setRouteColor(this.featureOptions.routeColor)
 			}
 
 			if(loadedDataJSON.mapData){

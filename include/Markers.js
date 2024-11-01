@@ -7,6 +7,8 @@ export default class{
 
 	list = []
 
+	colorMode = 'network'
+
 	// **********************************************************
 	// Constructor, to merge in options
 
@@ -35,10 +37,11 @@ export default class{
 			el.dataset.name = `${feature.properties.name}`
 			el.dataset.type = feature.properties.type
 			el.dataset.trust = feature.properties.trust
+			el.dataset.trustColor = networks.find(network => network.name == feature.properties.trust).color
 
-			const color = networks.find(network => network.name == feature.properties.trust).color
-			el.style = `--tooltip-background-color: ${color}`
-			el.style.background = color
+			// Set default to be the trustColor
+			el.style = `--this-marker-color: ${el.dataset.trustColor}`
+
 			el.classList.toggle('isHub', feature.properties.isHub)
 			el.classList.toggle('isInclude', feature.properties.isInclude)
 			el.classList.toggle('isVisible', feature.properties.isVisible)
@@ -101,7 +104,38 @@ export default class{
 		}
 	}
 
+	// **********************************************************
+	// Toggle the colour mode
 
+	setColorMode = (newColorMode = this.colorMode) => {
+
+		this.colorMode = newColorMode
+		
+		for(let marker of this.list){
+			const el = marker.getElement()
+
+			switch(newColorMode){
+				case 'network':					
+					el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', el.dataset.trustColor)
+					break
+				case 'blue':					
+					el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', '#005EB8')
+					break
+				case 'yellow':	
+				default:				
+					el.style = this._replaceStyleVariableValue(el.getAttribute('style'), '--this-marker-color', '#ffc03a')
+					break
+			}
+		}
+	}
+
+	_replaceStyleVariableValue = (styleAttribute, variableName, newValue) => {
+		// Create a regex to match the specific variable
+		const variableRegex = new RegExp(`(${variableName}:\\s*)([^;]+)`);
+		
+		// Replace the variable value while keeping the rest of the style attribute intact
+		return styleAttribute.replace(variableRegex, `$1${newValue}`);
+  }
 
 
 /*

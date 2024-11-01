@@ -243,12 +243,13 @@ main{
 	background: var(--color-page-bg);
 	font-weight: 300;
 	max-height: 50vh;
-   overflow: scroll;
+   overflow-y: scroll;
 }
 .options-panel-detail a:hover{
 	color: black;
 }
 
+.options-panel:not([data-option="view"]) 		.panel-view,
 .options-panel:not([data-option="filter"]) 	.panel-filter,
 .options-panel:not([data-option="analyse"]) 	.panel-analyse,
 .options-panel:not([data-option="edit"]) 		.panel-edit,
@@ -256,6 +257,7 @@ main{
 	display: none;
 }
 
+.options-panel[data-option="view"] 		[href="#options-view"],
 .options-panel[data-option="filter"] 	[href="#options-filter"],
 .options-panel[data-option="analyse"] 	[href="#options-analyse"],
 .options-panel[data-option="edit"] 		[href="#options-edit"],
@@ -271,9 +273,9 @@ main{
 	--marker_width: 8px;
 	--hover_border_width: 2px;
 
-	--tooltip-background-color: var(--color-primary); /* Will be overriden in JS on this element */
+	--this-marker-color: var(--color-primary); /* Will be overriden in JS on this element */
 
-	background: var(--color-primary);
+	background: var(--this-marker-color);
 	width: 8px;
 	border-radius: 50%;
 	cursor: default;
@@ -295,7 +297,7 @@ main{
 }
 .marker .label .line1,
 .marker .label .line2{
-	background: var(--tooltip-background-color);
+	background: var(--this-marker-color);
 	display: block;
 	color: white;
 	font-size: 12px;
@@ -325,7 +327,7 @@ main{
 
 .marker::after{
 	content: "";
-	background: var(--tooltip-background-color);
+	background: var(--this-marker-color);
 	width: 25px;
 	aspect-ratio: 1;
 	border-radius: 100%;

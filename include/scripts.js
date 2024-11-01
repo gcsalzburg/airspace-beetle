@@ -40,7 +40,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 			networksList: document.querySelector('.networks-list'),
 			routesData: document.querySelector('.routes-data'),
 			weightsSliders: document.querySelector('.weights-sliders'),
-			filterSliders: document.querySelector('.filter-sliders')
+			filterSliders: document.querySelector('.filter-sliders'),
+			colourSelectors: document.querySelector('.color-selectors')
 		},
 		
 		onHasStorageData: () => {
@@ -146,23 +147,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 				myNetwork.setMapStyle('satellite')
 				break
 
+			case 'options-view':
+				document.querySelector('.options-panel').dataset.option = 'view'
+				localStorage.setItem('optionsView', 'view')
+				break
 			case 'options-filter':
 				document.querySelector('.options-panel').dataset.option = 'filter'
+				localStorage.setItem('optionsView', 'filter')
 				break
 
 			case 'options-analyse':
 				document.querySelector('.options-panel').dataset.option = 'analyse'
+				localStorage.setItem('optionsView', 'analyse')
 				break
 
 			case 'options-edit':
 				document.querySelector('.options-panel').dataset.option = 'edit'
+				localStorage.setItem('optionsView', 'edit')
 				break
 
 			case 'options-export':
 				document.querySelector('.options-panel').dataset.option = 'export'
+				localStorage.setItem('optionsView', 'export')
 				break
 		}
 	}))
+
+
+	if(localStorage.getItem('optionsView')){
+		document.querySelector('.options-panel').dataset.option = localStorage.getItem('optionsView')
+	}
 
 	const exportGeoJSON = (geojson) => {
 
