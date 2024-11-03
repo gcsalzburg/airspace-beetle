@@ -339,6 +339,7 @@ main{
 	font-weight: 300;
 	max-height: 50vh;
    overflow-y: scroll;
+	overflow-x: hidden;
 	color: white;
 	margin-top: 1em;
    padding-right: 1em;
@@ -743,6 +744,8 @@ h3{
 	font-weight: 300;
 	overflow: hidden;
 	white-space: pre;
+	user-select: none;
+	position: relative;
 }
 .networks-list .num{
 	background: color-mix(in srgb, var(--color-primary) 70%, transparent);
@@ -774,6 +777,28 @@ h3{
 	right: -5px;
 	background: white;
 	transform: rotate(30deg);
+}
+
+.networks-list.hasIsolatedNetwork .network:not(.isIsolated){
+	opacity: 0.4;
+}
+
+.networks-list .network.isIsolated{
+	transform: translateX(13px);
+   overflow: initial;
+}
+.networks-list .network.isIsolated::before{
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 9px solid #ffffff;
+	border-right: 0;
+	position: absolute;
+	content: "";
+	transform: translateX(-13px);
+	top: 30%;
 }
 
 

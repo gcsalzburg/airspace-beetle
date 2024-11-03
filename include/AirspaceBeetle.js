@@ -32,7 +32,8 @@ export default class{
 			others: 1
 		},
 		routeColor: 'network',
-		markerColor: 'network'
+		markerColor: 'network',
+		isolated: null
 	}
  
 	// Default options are below
@@ -72,6 +73,14 @@ export default class{
 			valueSuffix: 'km',
 			onInput: (value) => {
 				this.setDroneRange(value)
+				this.regenerateMap({
+					networksAndTypes: false,
+					markers: false,
+					routes: false,
+					metadata: true,
+					centroids: false,
+					saveToStorage: false
+				})
 			}
 		})
 		this.minRangeSlider = new RangeSlider({
@@ -84,6 +93,14 @@ export default class{
 			valueSuffix: 'km',
 			onInput: (value) => {
 				this.setDroneMinRange(value)
+				this.regenerateMap({
+					networksAndTypes: false,
+					markers: false,
+					routes: false,
+					metadata: true,
+					centroids: false,
+					saveToStorage: false
+				})
 			}
 		})
 
@@ -146,6 +163,10 @@ export default class{
 				this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
 				this.saveToStorage()
 				// TODO: Add/delete centroid for this network here
+			},
+			onIsolate: (networkName) => {
+				this.featureOptions.isolated = networkName
+				this.saveToStorage()
 			}
 		})
 
@@ -248,10 +269,6 @@ export default class{
 	// **********************************************************
 	// Map handlers / manipulation etc
 
-	updateMapContainer = () => {
-		this.map.resize()
-	}
-
 	zoomToLocations = () => {
 		const bbox = turf.bbox(this.mapData.locations)
 		this.map.fitBounds(bbox,{
@@ -262,6 +279,10 @@ export default class{
 	// **********************************************************
 	// Public functions (in theory!)
 	// TODO: Set all other fns to _ prefix
+
+	updateMapContainer = () => {
+		this.map.resize()
+	}
 
 	getGeojson = () => {
 
@@ -285,51 +306,6 @@ export default class{
 		}
 	}
 
-	// Drone range handling
-	setDroneRange = (range) => {
-		// Save the range
-		this.featureOptions.droneRange = parseInt(range)
-
-		this.routes.setMaxRange(this.featureOptions.droneRange)
-	//	this.centroids.updateRange(range)
-		this.regenerateMap({
-			networksAndTypes: false,
-			markers: false,
-			routes: false,
-			metadata: true,
-			centroids: false,
-			saveToStorage: false
-		})
-	}
-	setDroneMinRange = (range) => {
-		// Save the range
-		this.featureOptions.droneMinRange = parseFloat(range)
-
-		this.routes.setMinRange(this.featureOptions.droneMinRange)
-		this.regenerateMap({
-			networksAndTypes: false,
-			markers: false,
-			routes: false,
-			metadata: true,
-			centroids: false,
-			saveToStorage: false
-		})
-	//	this.centroids.updateRange(range)
-	}
-
-	setRouteColor = (colorMode) => {
-		this.featureOptions.routeColor = colorMode
-		this.routes.setColorMode(colorMode)
-		this.saveToStorage()
-	}
-
-	setMarkerColor = (colorMode) => {
-		this.featureOptions.markerColor = colorMode
-		this.markers.setColorMode(colorMode)
-		this.saveToStorage()
-	}
-
-
 	setMapStyle = (style) => {
 
 		// For when changing the base map
@@ -338,6 +314,8 @@ export default class{
 			this.map.on('style.load', () => {
 				this.routes.init()
 				this.routes.drawRoutes()
+				console.log(this.featureOptions.isolated)
+				this.networks.isolate(this.featureOptions.isolated, true)
 			})
 		}
 
@@ -362,6 +340,35 @@ export default class{
 
 		this.saveToStorage()
 
+	}
+
+	// **********************************************************
+	// Adjust general drone / styling properties 
+
+	// Drone range handling
+	setDroneRange = (range) => {
+		// Save the range
+		this.featureOptions.droneRange = parseInt(range)
+		this.routes.setMaxRange(this.featureOptions.droneRange)
+	//	this.centroids.updateRange(range)
+	}
+	setDroneMinRange = (range) => {
+		// Save the range
+		this.featureOptions.droneMinRange = parseFloat(range)
+		this.routes.setMinRange(this.featureOptions.droneMinRange)
+	//	this.centroids.updateRange(range)
+	}
+
+	setRouteColor = (colorMode) => {
+		this.featureOptions.routeColor = colorMode
+		this.routes.setColorMode(colorMode)
+		this.saveToStorage()
+	}
+
+	setMarkerColor = (colorMode) => {
+		this.featureOptions.markerColor = colorMode
+		this.markers.setColorMode(colorMode)
+		this.saveToStorage()
 	}
 
 	empty = () => {
@@ -443,6 +450,12 @@ export default class{
 	}
 
 	toggleLocationVisibility = (networkName, isVisible) => {
+
+		// First, check if its actually changing or not, to avoid double adding the markers
+		if(isVisible == this.mapData.locations.features.find(location => location.properties.trust == networkName && location.properties.isHub).properties.isVisible){
+			return
+		}
+
 		for(let location of this.mapData.locations.features.filter(location => location.properties.trust == networkName)){
 			location.properties.isVisible = isVisible
 		}
@@ -498,6 +511,7 @@ export default class{
 			for(let location of this.mapData.locations.features.filter(location => location.properties.isHub)){
 				this.networks.toggleInList(location.properties.trust, location.properties.isVisible)
 			}
+			this.networks.isolate(this.featureOptions.isolated, true)
 
 			// Recalculate the stats and metadata bit
 			const routeProps = this.routes.getRouteProperties()
@@ -616,7 +630,6 @@ export default class{
 			if(loadedDataJSON.map){
 				this.map.setCenter(loadedDataJSON.map.center)
 				this.map.setZoom(loadedDataJSON.map.zoom)
-			//	this.map.setStyle(loadedDataJSON.map.style)
 			}
 
 			if(loadedDataJSON.featureOptions){
