@@ -28,8 +28,8 @@ export default class extends List{
 
 				if(network){
 					if(e.shiftKey && network.classList.contains('isVisible')){
-						this.isolate(network.dataset.name)
-						this.options.onIsolate(network.dataset.name)
+						const isIsolated = this.isolate(network.dataset.name)
+						this.options.onIsolate(network.dataset.name, isIsolated)
 					}else if(!this.isIsolated){
 						this.toggleVisibility(network.dataset.name, !network.classList.contains('isVisible'))
 					}
@@ -84,6 +84,7 @@ export default class extends List{
 		}
 	}
 
+	// TODO: Consider if after all this, for the isolate mode we should just hide the other networks entirely? So we can edit and iteract with the map at high speed
 	isolate = (networkName = null, force = false) => {
 		if(!networkName){
 			return
@@ -107,5 +108,7 @@ export default class extends List{
 		// Set root class
 		this.options.listContainer.classList.toggle('hasIsolatedNetwork', isIsolated)
 		this.isIsolated = isIsolated ? networkItem.dataset.name : null
+
+		return isIsolated
 	}
 }

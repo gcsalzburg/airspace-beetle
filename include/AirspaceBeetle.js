@@ -105,7 +105,7 @@ export default class{
 		})
 
 		// Create colour selectors
-		this.markerSizeSelect = new Select({
+/*		this.markerSizeSelect = new Select({
 			container: this.options.dom.colourSelectors,
 			label: 'Marker size:',
 			options: [
@@ -115,7 +115,7 @@ export default class{
 			onChange: (colorMode) => {
 				// TODO: Toggle page class & save to localStorage
 			}
-		})
+		})*/
 		this.markerColorSelect = new Select({
 			container: this.options.dom.colourSelectors,
 			label: 'Marker display:',
@@ -125,7 +125,7 @@ export default class{
 				{name: 'Blue', 			value: 'blue'},
 				{name: 'Yellow', 			value: 'yellow'},
 				{name: 'By network', 	value: 'network', selected: true},
-				{name: 'By type', 		value: 'type'}
+	//			{name: 'By type', 		value: 'type'}
 			],
 			onChange: (colorMode) => {
 				this.setMarkerColor(colorMode)
@@ -147,12 +147,17 @@ export default class{
 			}
 		})
 
+		// TODO: Networks should import markers and routes onto the map
+
 		// Create a new Networks object
 		this.networks = new Networks({
 			listContainer: this.options.dom.networksList,
 			onListMouseMove: (networkName) => {
-				this.markers.filterByNetwork(networkName)
-				this.routes.filterByNetwork(networkName)
+			//	setTimeout(() => {
+					this.markers.filterByNetwork(networkName)
+					this.routes.filterByNetwork(networkName)
+
+			//	}, 1000)
 			},
 			onListMouseLeave: () => {
 				this.markers.filterByNetwork()
@@ -164,8 +169,8 @@ export default class{
 				this.saveToStorage()
 				// TODO: Add/delete centroid for this network here
 			},
-			onIsolate: (networkName) => {
-				this.featureOptions.isolated = networkName
+			onIsolate: (networkName, isIsolated) => {
+				this.featureOptions.isolated = isIsolated ? networkName : null
 				this.saveToStorage()
 			}
 		})
@@ -195,7 +200,7 @@ export default class{
 		this.map = new mapboxgl.Map({
 			accessToken: this.options.mapbox_token,
 			container: this.options.dom.mapbox,
-			style: mapConfig.style ?? this.options.mapbox_style,
+			style: this.getStyleURLFromStyle(this.currentMapStyle),
 			center: mapConfig.center ?? [this.options.mapbox_view.centre.lng, this.options.mapbox_view.centre.lat],
 			zoom: mapConfig.zoom ?? this.options.mapbox_view.zoom,
 			boxZoom: false
@@ -260,7 +265,7 @@ export default class{
 				Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isInclude = isInclude
 
 				this.regenerateMap({centroids: false})
-				this.centroids.updateLocations(this.mapData.locations.features.filter(location => location.properties.isVisible))
+			//	this.centroids.updateLocations(this.mapData.locations.features.filter(location => location.properties.isVisible))
 			}
 		})
 
@@ -306,40 +311,37 @@ export default class{
 		}
 	}
 
-	setMapStyle = (style) => {
+	setMapStyle = async (style) => {
+
+		if(style == this.currentMapStyle){
+			return
+		}
+
+		this.currentMapStyle = style
 
 		// For when changing the base map
-		if(!this.hasAddedStyleLoadListener){
-			this.hasAddedStyleLoadListener = true
-			this.map.on('style.load', () => {
-				this.routes.init()
-				this.routes.drawRoutes()
-				console.log(this.featureOptions.isolated)
-				this.networks.isolate(this.featureOptions.isolated, true)
-			})
-		}
-
-		switch(style){
-			case 'apian':
-				this.map.setStyle('mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw')
-				this.currentMapStyle = 'mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw'
-				break
-			case 'light':
-				this.map.setStyle('mapbox://styles/mapbox/light-v11')
-				this.currentMapStyle = 'mapbox://styles/mapbox/light-v11'
-				break
-			case 'dark':
-				this.map.setStyle('mapbox://styles/mapbox/dark-v11')
-				this.currentMapStyle = 'mapbox://styles/mapbox/dark-v11'
-				break
-			case 'satellite':
-				this.map.setStyle('mapbox://styles/mapbox/satellite-v9')
-				this.currentMapStyle = 'mapbox://styles/mapbox/satellite-v9'
-				break
-		}
+		this.map.once('style.load', async (e) => {
+			this.routes.init()
+			await this.routes.drawRoutes()
+			this.networks.isolate(this.featureOptions.isolated, true)
+		})
+		this.map.setStyle(this.getStyleURLFromStyle(style))
 
 		this.saveToStorage()
+	}
 
+	getStyleURLFromStyle = (style) => {
+		switch(style){
+			case 'light':
+				return 'mapbox://styles/mapbox/light-v11'
+			case 'dark':
+				return 'mapbox://styles/mapbox/dark-v11'
+			case 'satellite':
+				return 'mapbox://styles/mapbox/satellite-v9'
+			case 'apian':
+			default:
+				return 'mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw'
+		}
 	}
 
 	// **********************************************************
@@ -469,7 +471,7 @@ export default class{
 	// **********************************************************
 	// Building & rebuilding map content
 
-	regenerateMap = (options) => {
+	regenerateMap = async (options) => {
 
 		const _options = {...{
 			networksAndTypes: false,
@@ -494,7 +496,7 @@ export default class{
 			
 		if(_options.routes){
 			// Rebuild all routes again
-			this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
+			await this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
 		}
 
 		if(_options.metadata){	

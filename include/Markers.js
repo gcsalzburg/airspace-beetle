@@ -50,13 +50,22 @@ export default class{
 
 			// Add marker interactions
 			el.addEventListener('mouseover', () => {
-					document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
-					document.querySelector(`.marker[data-name="${feature.properties.name}"]`).classList.add('show-label')
+				if(!el.classList.contains('isVisible')){
+					return
+				}
+				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
+				document.querySelector(`.marker[data-name="${feature.properties.name}"]`).classList.add('show-label')
 			})
 			el.addEventListener('mouseleave', () => {
+				if(!el.classList.contains('isVisible')){
+					return
+				}
 				document.querySelectorAll('.marker').forEach(marker => marker.classList.remove('show-label'))
 			})
 			el.addEventListener('click', (e) => {
+				if(!el.classList.contains('isVisible')){
+					return
+				}
 				if(!feature.properties.isHub){
 					if(e.shiftKey){
 						// Turning into the hub!

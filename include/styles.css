@@ -506,7 +506,7 @@ main{
 	top: -8px;
 	opacity: 0.3;
 }
-.marker:not(:hover)::after{
+.marker.isVisible:not(:hover)::after{
 	/*display: none;*/
 	width: 18px;
 	left: -5px;
@@ -532,6 +532,7 @@ main{
 .marker:not(.isVisible){
 	opacity: 0.1 !important;
 	filter: grayscale(100%);
+	pointer-events: none;
 }
 .marker.isVisible{
 	z-index: 5000;

@@ -18,7 +18,7 @@ export default class{
 
 	colorMode = 'network'
 
-	hasLoadedDataAfterRebuild = false
+	currentNetworkFilter = null
 
 	// **********************************************************
 	// Constructor, to merge in options
@@ -28,6 +28,12 @@ export default class{
 	}
 
 	init = () => {
+
+		// Just in case we call this again (sometimes happen when changing base map style)
+		if(this.options.map.getSource('routes')){
+			this.options.map.removeLayer('routes')
+			this.options.map.removeSource('routes')
+		}
 
 		// Add the routes source and layer to the map
 		this.options.map.addSource('routes', {type: 'geojson', data: this.routes, 'promoteId': "id"})
@@ -83,12 +89,12 @@ export default class{
 		// Add hover effects to routes
 		this.options.map.on('mousemove', 'routes', (e) => {
 			if (e.features.length > 0) {
-				this.highlightRoute(e.features[0])
+				this._highlightRoute(e.features[0])
 			}
 		})
 		this.options.map.on('mouseleave', 'routes', () => {
 			// Clear the route highlighting effect
-			this.highlightRoute()
+			this._highlightRoute()
 		})
 	}
 
@@ -114,7 +120,7 @@ export default class{
 		this.routes.features = []
 	}
 
-	rebuildFromLocations = (locations, colors) => {
+	rebuildFromLocations = async (locations, colors) => {
 
 		this.empty()
 
@@ -155,23 +161,27 @@ export default class{
 			}
 		}
 
-		this.drawRoutes()
+		await this.drawRoutes()
 	}
 
-	drawRoutes = () => {
-
-		this.hasLoadedDataAfterRebuild = false
+	drawRoutes = async () => {
 
 		// Reapply the new routes
-		this.options.map.on('data', (e) => {
-			if (e.sourceId === 'routes' && !this.hasLoadedDataAfterRebuild) {
-				this.setMaxRange(this.range.max)
-				this.setMinRange(this.range.min)
-				this.hasLoadedDataAfterRebuild = true
-			}
-
-		})
 		this.options.map.getSource('routes').setData(this.routes)
+
+		await new Promise(resolve => {
+			const checkData = (e) => {
+				// Via: https://gis.stackexchange.com/a/282140
+				if (e.sourceId === 'routes' && e.isSourceLoaded && e.sourceDataType !== 'metadata'){
+					this.setMaxRange(this.range.max)
+					this.setMinRange(this.range.min)
+					this.options.map.off('sourcedata', checkData)
+					resolve()
+				}
+			}
+			this.options.map.on('sourcedata', checkData)
+	  })
+		return true
 	}
 
 	// **********************************************************
@@ -186,6 +196,7 @@ export default class{
 					{showThisNetwork: true}
 				)
 			}
+			this.currentNetworkFilter = null
 			return
 		}
 		
@@ -209,26 +220,9 @@ export default class{
 				{showThisNetwork: true}
 			)
 		})
-	}
 
-	// DEPRECATED: Now we just rebuild the whole routes object, which auto-excludes any routes not visible
-	/*
-	toggleNetwork = (network, isVisible) => {
-		// Filter routes by which ones are within range
-		const validRoutes = this.options.map.querySourceFeatures('routes', {
-			sourceLayer: 'routes',
-			filter: ['==', 'trust', network]
-		})
-
-		// For each valid route, set the feature as being within range
-		validRoutes.forEach((feature) => {
-			this.options.map.setFeatureState(
-				{source: 'routes', id: feature.id},
-				{isVisible: isVisible}
-			)
-		})
+		this.currentNetworkFilter = network
 	}
-	*/
 
 	setMaxRange = (range) => {
 
@@ -302,7 +296,8 @@ export default class{
 
 	// **********************************************************
 
-	highlightRoute = (feature = null) => {
+	_highlightRoute = (feature = null) => {
+
 
 		// Clear highligthing
 		if(!feature){
@@ -316,6 +311,12 @@ export default class{
 			this.options.onClearHighlight()
 
 		}else{
+
+			// Don't do anything if this is not a filtered network
+			if(this.currentNetworkFilter && (feature.properties.trust != this.currentNetworkFilter)){
+				return
+			}
+
 			// Apply feature state to the correct route
 			// Only do the hover if we are within the droneRange or not
 			// TODO: Make this filtering more generic
