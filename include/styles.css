@@ -517,7 +517,7 @@ main{
 .marker.isHub {
 	width: 16px;
 }
-.marker.isHub::after{
+.marker.isVisible.isHub::after{
 	width: 28px;
 	left: -6px;
 	top: -6px;
