@@ -122,7 +122,7 @@ export default class{
 
 			// Save coords
 			const location_coords = [parseFloat(parts[2]), parseFloat(parts[1])]
-			const isHub = (parts[5]=='y')
+			const isHub = (parts[5]=='y') || (parts[5]=='Yes')
 
 			this.locationsArray.push({
 				name: parts[0],
