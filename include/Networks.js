@@ -1,9 +1,6 @@
 import List from './List.js'
-import * as Utils from './Utils.js'
 
 export default class extends List{
-
-	isIsolated = false
 
 	constructor(options){
 
@@ -14,7 +11,7 @@ export default class extends List{
 			// Add hover effects to list of networks on side
 			this.options.listContainer.addEventListener('mousemove', (e) => {
 				const network = e.target.closest('.network')
-				if(network && !this.isIsolated){
+				if(network){
 					if(network.classList.contains('isVisible')){
 						this.options.onListMouseMove(network.dataset.name)
 					}else{
@@ -27,29 +24,37 @@ export default class extends List{
 				const network = e.target.closest('.network')
 
 				if(network){
-					if(e.shiftKey && network.classList.contains('isVisible')){
-						const isIsolated = this.isolate(network.dataset.name)
-						this.options.onIsolate(network.dataset.name, isIsolated)
-					}else if(!this.isIsolated){
-						this.toggleVisibility(network.dataset.name, !network.classList.contains('isVisible'))
+					if(e.shiftKey){
+						// Hold down shift to show only this network
+						this._isolateVisibility(network)
+					}else{
+						// Otherwise just toggle the network visibility
+						this._toggleVisibility(network, !network.classList.contains('isVisible'))
 					}
 				}
 			})
 			this.options.listContainer.addEventListener('mouseleave', (e) => {
-				if(!this.isIsolated){
-					this.options.onListMouseLeave()
-				}
+				this.options.onListMouseLeave()
 			})
 		}
 	}
 
 	renderDOMList = () => {
 		if(this.options.listContainer){
-			 // Update the list
-			 this.options.listContainer.innerHTML = this.list.reduce((html, item) => {
-				const itemHTML = `<div class="network isVisible ${item.name == this.isIsolated ? 'isIsolated' : ''}" data-name="${item.name}"><span class="num" style="background-color: ${item.color}">${item.count} / ${item.total}</span> ${item.name}</div>`
+			// Update the list
+			this.options.listContainer.innerHTML = this.list.reduce((html, item) => {
+				const itemHTML = `<div class="network isVisible" data-name="${item.name}"><span class="num" style="background-color: ${item.color}">${item.count} / ${item.total}</span> ${item.name}</div>`
 				return html + itemHTML
-			 }, '')
+			}, '')
+
+			this.options.listContainer.insertAdjacentHTML('afterBegin', `<a href="#show-all">Show all</a>`)
+			this.options.listContainer.querySelector('a[href="#show-all"]').addEventListener('mousemove', () => {
+				this.options.onListMouseLeave()
+			})
+			this.options.listContainer.querySelector('a[href="#show-all"]').addEventListener('click', (e) => {
+				e.preventDefault()
+				this._showAll()
+			})
 		}
 	}
 
@@ -67,16 +72,18 @@ export default class extends List{
 		this.sort()
 	}
 
-	toggleVisibility = (networkName = null, state = false) => {
-		if(!networkName){
+	_toggleVisibility = async (networkItem = null, state = false) => {
+
+		if(!networkItem){
 			return
 		}
 
-		const networkItem = document.querySelector(`.network[data-name="${networkName}"]`)
+		const networkName = networkItem.dataset.name
 
 		networkItem.classList.toggle('isVisible', state)
-		Utils.findObjectByProperty(this.list, "name", networkName).isVisible = state
-		this.options.onToggleNetwork(networkName, state)
+		this.list.find(item => item.name == networkName).isVisible = state
+		await this.options.onToggleNetworks([networkName], state)
+
 		if(state){
 			this.options.onListMouseMove(networkName)
 		}else{
@@ -84,31 +91,39 @@ export default class extends List{
 		}
 	}
 
-	// TODO: Consider if after all this, for the isolate mode we should just hide the other networks entirely? So we can edit and iteract with the map at high speed
-	isolate = (networkName = null, force = false) => {
-		if(!networkName){
+	// Shortcut to hide all others and show just this one
+	_isolateVisibility = async (networkItem = null, force = false) => {
+		if(!networkItem){
 			return
 		}
 
-		// Make sure we have this one shown first
-		this.options.onListMouseMove(networkName)
+		const networkName = networkItem.dataset.name
 
-		const networkItem = document.querySelector(`.network[data-name="${networkName}"]`)
+		// First call this, to reset the view
+		this.options.onListMouseLeave()
 
-		// Hold down shift to lock the current hovered item
-		const isIsolated = force ? true : !networkItem.classList.contains('isIsolated')
-
-		networkItem.classList.toggle('isIsolated', isIsolated)
-		this.options.listContainer.querySelectorAll('.isIsolated').forEach(listItem => {
-			if(listItem.dataset.name != networkItem.dataset.name){
-				listItem.classList.remove('isIsolated')
-			}
+		// Hide all others
+		document.querySelectorAll(`.network:not([data-name="${networkName}"])`).forEach(networkElm => {
+			networkElm.classList.remove('isVisible')
 		})
+		this.list.filter(item => item.name != networkName).forEach(network => {
+			network.isVisible = false
+		})
+		await this.options.onToggleNetworks(this.list.filter(item => item.name != networkName).map(network => network.name), false)
 
-		// Set root class
-		this.options.listContainer.classList.toggle('hasIsolatedNetwork', isIsolated)
-		this.isIsolated = isIsolated ? networkItem.dataset.name : null
+		// Show this one
+		networkItem.classList.add('isVisible')
+		this.list.find(item => item.name == networkName).isVisible = true
+		await this.options.onToggleNetworks([networkName], true)
 
-		return isIsolated
+		// Trigger this, just in case it was hidden previously
+		this.options.onListMouseMove(networkName)
+	}
+
+	_showAll = async () => {
+		document.querySelectorAll(`.network`).forEach(networkElm => {
+			networkElm.classList.add('isVisible')
+		})
+		await this.options.onToggleNetworks(this.list.map(network => network.name), true)
 	}
 }

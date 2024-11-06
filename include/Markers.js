@@ -28,8 +28,8 @@ export default class{
 
 	addToMap = (locations, networks) => {
 
-		// Add markers for all end locations
-		for (const feature of locations) {
+		// Add markers for all locations that are filtered to be visible
+		for (const feature of locations.filter(location => location.properties.isVisible)) {
 			// create a HTML element for each feature
 			const el = document.createElement('div')
 			el.insertAdjacentHTML('beforeend',`<div class="label"><span class="line1">${feature.properties.name}</span><span class="line2">${feature.properties.type}</span></div>`)
@@ -104,14 +104,14 @@ export default class{
 			}
 		}
 	}
-
+/*
 	toggleNetwork = (networkName, isVisible) => {
 		for(let marker of this.list){
 			if(marker.getElement().dataset.trust == networkName){
 				marker.getElement().classList.toggle('isVisible', isVisible)
 			}
 		}
-	}
+	}*/
 
 	filterByNetwork = (networkName = null) => {
 

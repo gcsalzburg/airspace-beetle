@@ -506,8 +506,8 @@ main{
 	top: -8px;
 	opacity: 0.3;
 }
-.marker.isVisible:not(:hover)::after{
-	/*display: none;*/
+
+.marker:not(:hover)::after{
 	width: 18px;
 	left: -5px;
 	top: -5px;
@@ -517,7 +517,7 @@ main{
 .marker.isHub {
 	width: 16px;
 }
-.marker.isVisible.isHub::after{
+.marker.isHub::after{
 	width: 28px;
 	left: -6px;
 	top: -6px;
@@ -741,7 +741,7 @@ h3{
 }
 .networks-list .network{
 	margin-bottom: 0.2em;
-	cursor: default;
+	cursor: pointer;
 	font-weight: 300;
 	overflow: hidden;
 	white-space: pre;
@@ -764,44 +764,12 @@ h3{
 
 .networks-list .network:not(.isVisible) {
 	color: hsl(0, 0%, 80%);
+	opacity: 0.5;
 }
 .networks-list .network:not(.isVisible) .num{
 	background: hsl(0, 0%, 80%) !important;
 	opacity: 0.5;
 }
-.networks-list .network:not(.isVisible) .num::after{
-	content: "";
-	position: absolute;
-	height:3px;
-	top: 45%;
-	left: -5px;
-	right: -5px;
-	background: white;
-	transform: rotate(30deg);
-}
-
-.networks-list.hasIsolatedNetwork .network:not(.isIsolated){
-	opacity: 0.4;
-}
-
-.networks-list .network.isIsolated{
-	transform: translateX(13px);
-   overflow: initial;
-}
-.networks-list .network.isIsolated::before{
-	width: 0;
-	height: 0;
-	border-style: solid;
-	border-top: 5px solid transparent;
-	border-bottom: 5px solid transparent;
-	border-left: 9px solid #ffffff;
-	border-right: 0;
-	position: absolute;
-	content: "";
-	transform: translateX(-13px);
-	top: 30%;
-}
-
 
 .routes-length{
 	font-weight: 300;

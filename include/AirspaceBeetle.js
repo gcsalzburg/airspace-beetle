@@ -32,8 +32,7 @@ export default class{
 			others: 1
 		},
 		routeColor: 'network',
-		markerColor: 'network',
-		isolated: null
+		markerColor: 'network'
 	}
  
 	// Default options are below
@@ -153,25 +152,18 @@ export default class{
 		this.networks = new Networks({
 			listContainer: this.options.dom.networksList,
 			onListMouseMove: (networkName) => {
-			//	setTimeout(() => {
-					this.markers.filterByNetwork(networkName)
-					this.routes.filterByNetwork(networkName)
-
-			//	}, 1000)
+				this.markers.filterByNetwork(networkName)
+				this.routes.filterByNetwork(networkName)
 			},
 			onListMouseLeave: () => {
 				this.markers.filterByNetwork()
 				this.routes.filterByNetwork()
 			},
-			onToggleNetwork: (networkName, isVisible) => {
-				this.toggleLocationVisibility(networkName, isVisible)
-				this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
+			onToggleNetworks: async (networkNames, isVisible) => {
+				this.toggleLocationVisibility(networkNames, isVisible)
+				await this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
 				this.saveToStorage()
 				// TODO: Add/delete centroid for this network here
-			},
-			onIsolate: (networkName, isIsolated) => {
-				this.featureOptions.isolated = isIsolated ? networkName : null
-				this.saveToStorage()
 			}
 		})
 
@@ -323,7 +315,6 @@ export default class{
 		this.map.once('style.load', async (e) => {
 			this.routes.init()
 			await this.routes.drawRoutes()
-			this.networks.isolate(this.featureOptions.isolated, true)
 		})
 		this.map.setStyle(this.getStyleURLFromStyle(style))
 
@@ -451,21 +442,27 @@ export default class{
 		}
 	}
 
-	toggleLocationVisibility = (networkName, isVisible) => {
+	// Expect networkNames to be an array
+	toggleLocationVisibility = (networkNames, isVisible) => {
 
-		// First, check if its actually changing or not, to avoid double adding the markers
-		if(isVisible == this.mapData.locations.features.find(location => location.properties.trust == networkName && location.properties.isHub).properties.isVisible){
-			return
+		for(let networkName of networkNames){
+			if(isVisible == this.mapData.locations.features.find(location => location.properties.trust == networkName).properties.isVisible){
+				// First, check if its actually changing or not, to avoid double adding the markers
+				continue
+			}
+
+			for(let location of this.mapData.locations.features.filter(location => location.properties.trust == networkName)){
+				location.properties.isVisible = isVisible
+			}
+			if(isVisible){
+				this.markers.addToMap(this.mapData.locations.features.filter(location => location.properties.trust == networkName), this.networks.get())
+			}else{
+				this.markers.removeNetwork(networkName)
+			}
+
 		}
 
-		for(let location of this.mapData.locations.features.filter(location => location.properties.trust == networkName)){
-			location.properties.isVisible = isVisible
-		}
-		if(isVisible){
-			this.markers.addToMap(this.mapData.locations.features.filter(location => location.properties.trust == networkName), this.networks.get())
-		}else{
-			this.markers.removeNetwork(networkName)
-		}
+		// TODO update metadata count when we do this
 	}
 
 	// **********************************************************
@@ -513,7 +510,6 @@ export default class{
 			for(let location of this.mapData.locations.features.filter(location => location.properties.isHub)){
 				this.networks.toggleInList(location.properties.trust, location.properties.isVisible)
 			}
-			this.networks.isolate(this.featureOptions.isolated, true)
 
 			// Recalculate the stats and metadata bit
 			const routeProps = this.routes.getRouteProperties()
