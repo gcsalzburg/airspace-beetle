@@ -47,13 +47,21 @@ export default class extends List{
 				return html + itemHTML
 			}, '')
 
-			this.options.listContainer.insertAdjacentHTML('afterBegin', `<a href="#show-all">Show all</a>`)
+			// Add show and hide all buttons
+			this.options.listContainer.insertAdjacentHTML('afterBegin', `<div class="show-hide-all-buttons"><a href="#show-all">Show all</a> <a href="#hide-all">Hide all</a></div>`)
 			this.options.listContainer.querySelector('a[href="#show-all"]').addEventListener('mousemove', () => {
+				this.options.onListMouseLeave()
+			})
+			this.options.listContainer.querySelector('a[href="#hide-all"]').addEventListener('mousemove', () => {
 				this.options.onListMouseLeave()
 			})
 			this.options.listContainer.querySelector('a[href="#show-all"]').addEventListener('click', (e) => {
 				e.preventDefault()
 				this._showAll()
+			})
+			this.options.listContainer.querySelector('a[href="#hide-all"]').addEventListener('click', (e) => {
+				e.preventDefault()
+				this._hideAll()
 			})
 		}
 	}
@@ -125,5 +133,11 @@ export default class extends List{
 			networkElm.classList.add('isVisible')
 		})
 		await this.options.onToggleNetworks(this.list.map(network => network.name), true)
+	}
+	_hideAll = async () => {
+		document.querySelectorAll(`.network`).forEach(networkElm => {
+			networkElm.classList.remove('isVisible')
+		})
+		await this.options.onToggleNetworks(this.list.map(network => network.name), false)
 	}
 }

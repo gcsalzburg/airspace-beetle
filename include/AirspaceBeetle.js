@@ -162,6 +162,7 @@ export default class{
 			onToggleNetworks: async (networkNames, isVisible) => {
 				this.toggleLocationVisibility(networkNames, isVisible)
 				await this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
+				this._recalculateStats()
 				this.saveToStorage()
 				// TODO: Add/delete centroid for this network here
 			}
@@ -285,7 +286,7 @@ export default class{
 
 		// Get the data we want to return
 		const routes = this.routes.getRoutes()
-		const locations = this.mapData.locations.features.filter(location => location.properties.isInclude)
+		const locations = this.mapData.locations.features.filter(location => location.properties.isInclude && location.properties.isVisible)
 
 		// Add simple-style properties
 		const colors = this.networks.get()
@@ -511,16 +512,8 @@ export default class{
 				this.networks.toggleInList(location.properties.trust, location.properties.isVisible)
 			}
 
-			// Recalculate the stats and metadata bit
-			const routeProps = this.routes.getRouteProperties()
-			this.options.dom.stats.routes.innerHTML = routeProps.totalInRange
-			this.options.dom.stats.networks.innerHTML = this.networks.get().length
-			this.options.dom.stats.locations.innerHTML = this.mapData.locations.features.filter(location => location.properties.isInclude).length
-
-			//this.options.dom.routesData.querySelector('.route-length').innerHTML = `(${Math.round(routeProps.minLength*10)/10} - ${Math.round(routeProps.maxLength*10)/10} km)`
-			this.maxRangeSlider.setLimits({
-				max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
-			})
+			this._recalculateStats()
+		
 		}
 
 		if(_options.centroids){
@@ -538,6 +531,19 @@ export default class{
 			this.networks.add(location.properties.trust)
 			this.types.add(location.properties.type)
 		}
+	}
+
+	_recalculateStats = () => {
+
+		// Recalculate the stats and metadata bit
+		const routeProps = this.routes.getRouteProperties()
+		this.options.dom.stats.routes.innerHTML = routeProps.totalInRange
+		this.options.dom.stats.networks.innerHTML = this.networks.get().length
+		this.options.dom.stats.locations.innerHTML = this.mapData.locations.features.filter(location => location.properties.isInclude).length
+
+		this.maxRangeSlider.setLimits({
+			max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
+		})
 	}
 
 	// **********************************************************

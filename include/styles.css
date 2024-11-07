@@ -771,9 +771,9 @@ h3{
 	opacity: 0.5;
 }
 
-.routes-length{
-	font-weight: 300;
-	font-size: 0.8em;
+.networks-list .show-hide-all-buttons{
+	margin-bottom: 0.5em;
+	text-align: right;
 }
 
 /* *********************************************************** */
