@@ -75,6 +75,8 @@ export default class extends List{
 			if(dataCounts[item.name]){
 				item.count = dataCounts[item.name]
 				item.total = dataTotals[item.name]
+			}else{
+				item.count = 0
 			}
 		}
 		this.sort()

@@ -125,39 +125,41 @@ export default class{
 		this.empty()
 
 		// Iterate over, find hubs and draw lines from there
-		for (const hubLocation of locations) {
-			if(hubLocation.properties.isHub && hubLocation.properties.isVisible){
-				// Only build routes to/from the hubs
-				const trust = hubLocation.properties.trust
-				const hubCoords = hubLocation.geometry.coordinates
+		for (const hubLocation of locations.filter(location => location.properties.isHub && location.properties.isVisible)) {
+			// Only build routes to/from the hubs
+			const trust = hubLocation.properties.trust
+			const hubCoords = hubLocation.geometry.coordinates
 
-				const nodes = locations.filter(location => location.properties.trust == trust && location.properties.isInclude)
+			const nodes = locations.filter(location => location.properties.trust == trust && location.properties.isInclude)
 
-				for(let node of nodes){
-					const nodeCoords = node.geometry.coordinates
-					const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
-					const newRoute = {
-						type: "Feature",
-						properties: {
-							id: 				Math.random()*10000,
-							source: 			hubLocation.properties.name,
-							destination: 	node.properties.name,
-							crowDistance: 	distance,
-							pathDistance: 	distance,
-							trust:			trust,
-							nodeType:		node.properties.type,
-							color: 			colors.find(t => t.name == trust).color
-						},
-						geometry: {
-							type: 'LineString',
-							coordinates: [
-								hubCoords,
-								nodeCoords,
-							]
-						}
-					}
-					this.routes.features.push(newRoute)
+			for(let node of nodes){
+				if(node == hubLocation){
+					// Do not connect to self
+					continue
 				}
+				const nodeCoords = node.geometry.coordinates
+				const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
+				const newRoute = {
+					type: "Feature",
+					properties: {
+						id: 				Math.random()*10000,
+						source: 			hubLocation.properties.name,
+						destination: 	node.properties.name,
+						crowDistance: 	distance,
+						pathDistance: 	distance,
+						trust:			trust,
+						nodeType:		node.properties.type,
+						color: 			colors.find(t => t.name == trust).color
+					},
+					geometry: {
+						type: 'LineString',
+						coordinates: [
+							hubCoords,
+							nodeCoords,
+						]
+					}
+				}
+				this.routes.features.push(newRoute)
 			}
 		}
 

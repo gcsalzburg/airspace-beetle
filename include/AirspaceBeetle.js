@@ -462,8 +462,6 @@ export default class{
 			}
 
 		}
-
-		// TODO update metadata count when we do this
 	}
 
 	// **********************************************************
@@ -538,8 +536,8 @@ export default class{
 		// Recalculate the stats and metadata bit
 		const routeProps = this.routes.getRouteProperties()
 		this.options.dom.stats.routes.innerHTML = routeProps.totalInRange
+		this.options.dom.stats.locations.innerHTML = this.mapData.locations.features.filter(location => location.properties.isInclude && location.properties.isVisible).length
 		this.options.dom.stats.networks.innerHTML = this.networks.get().length
-		this.options.dom.stats.locations.innerHTML = this.mapData.locations.features.filter(location => location.properties.isInclude).length
 
 		this.maxRangeSlider.setLimits({
 			max: Math.min(Math.ceil(routeProps.maxLength/5)*5, 50)
@@ -573,22 +571,21 @@ export default class{
 		this.options.follower.clear()
 	}
 
+	// Fix bug where changing hub causes the totals to incorrectly recalculate
 	calculateLocationsInRange = () => {
 		// TODO: This is duplicated in the Routes.js class, perhaps consider merging somehow?
-		for (const hubLocation of this.mapData.locations.features) {
-			if(hubLocation.properties.isHub){
-				// Only build routes to/from the hubs
-				const trust = hubLocation.properties.trust
-				const hubCoords = hubLocation.geometry.coordinates
+		for (const hubLocation of this.mapData.locations.features.filter(location => location.properties.isHub)) {
+			// Only build routes to/from the hubs
+			const trust = hubLocation.properties.trust
+			const hubCoords = hubLocation.geometry.coordinates
 
-				const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && location.properties.isInclude)
+			const nodes = this.mapData.locations.features.filter(location => location.properties.trust == trust && location.properties.isInclude && !location.properties.isHub)
 
-				for(let node of nodes){
-					const nodeCoords = node.geometry.coordinates
-					const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
+			for(let node of nodes){
+				const nodeCoords = node.geometry.coordinates
+				const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
 
-					node.properties.isInRange = (distance >= this.featureOptions.droneMinRange) && (distance <= this.featureOptions.droneRange)
-				}
+				node.properties.isInRange = (distance >= this.featureOptions.droneMinRange) && (distance <= this.featureOptions.droneRange)
 			}
 		}
 	}
