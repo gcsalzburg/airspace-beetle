@@ -1,5 +1,4 @@
 import Markers from './Markers.js'
-import Routes from './Routes.js'
 
 export default class{
 
@@ -11,6 +10,12 @@ export default class{
 	locations = {
 		type: "FeatureCollection",
 		features: []					
+	}
+
+	// getJSON for routes
+	routes = {
+		type: "FeatureCollection",
+		features: []
 	}
 
 
@@ -29,75 +34,53 @@ export default class{
 			map: this.map,
 			color: this.color,
 			onHubChange: async (oldHub, newHub) => {
-
-				// Update geoJSON
 				this.locations.features.find(location => location.properties.name == oldHub).properties.isHub = false
 				this.locations.features.find(location => location.properties.name == newHub).properties.isHub = true
-
-				await this._renderRoutes()
 				this.options.onChange()
-				
 			},
 			onToggleInclude: async (locationName, isInclude) => {
-
 				this.locations.features.find(location => location.properties.name == locationName).properties.isInclude = isInclude
-
-				await this._renderRoutes()
 				this.options.onChange()
 			}
 		})
-
-		// Create routes collection
-		this.routes = new Routes({
-			map: this.map,
-			color: this.color,
-			layerName: this.name,
-			onRouteMouseOver: (sourceName, destinationName, length) => {
-				this.markers.showLabels([sourceName, destinationName])	// Add location label
-				this.options.onRouteMouseOver(sourceName, destinationName, length)
-			},
-			onRouteMouseLeave: () => {
-				this.markers.showLabels()	// Clear location labels too
-				this.options.onRouteMouseLeave()
-			}
-		})
-
-		this.routes.init()
 
 		// Add all locations
 		for(let location of this.options.locations){
-			this._addLocation(location.name, location.coordinates, {
-				type: location.type,
-				trust: location.trust,
-				isHub: location.isHub
-			})
+			this._addLocation(location)
 		}
 	}
 
 	// **********************************************************
 
-	getStats(){
+	getRoutes = () => {
+		return this.routes.features
+	}
+	
+	getRoutesInRange = (minRange = 0, maxRange = 10) => {
+		// TODO: Write and use this function
+	}
+
+	getRouteProperties = () => {
 		return {
-			totalRoutes: this.routes.getTotalCount(),
-			totalIncludedInRange: this.routes.getTotalIncludedInRange()
+			totalRoutes: 					this.routes.features.length,
+			minLength: 						this.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity),
+			maxLength: 						this.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
 		}
 	}
 
-	render = async () => {
+	// **********************************************************
+
+	rebuildRoutesAndMarkers = async () => {
+
+		this._generateRoutes()
+		this.markers.removeFromMap()
 		if(this.isVisible){
 			this.markers.addToMap(this.locations.features)
-			await this.routes.rebuildFromLocations(this.locations.features)
 		}
 	}
 
 	reloadRoutes = async () => {
-		this.routes.init()
-		await this.routes.rebuildFromLocations(this.locations.features)
-	}
-
-	empty = () => {
-		this.markers.removeFromMap(true)
-		this.routes.remove()
+		this._generateRoutes()
 	}
 
 	hide = () => {
@@ -105,48 +88,77 @@ export default class{
 		for(let location of this.locations.features){
 			location.properties.isVisible = false
 		}
-		this.empty()
 	}
 
 	// Hide it all
-	show = async () => {
+	show = () => {
 		this.isVisible = true
 		for(let location of this.locations.features){
 			location.properties.isVisible = true
 		}
-		this.markers.addToMap(this.locations.features)
-		this.routes.init()
-		await this.routes.rebuildFromLocations(this.locations.features)
 	}
 
 	setMarkerColor = (colorMode) => {
 		this.markers.setColorMode(colorMode)
 	}
 	setRouteColor = (colorMode) => {
-		this.routes.setColorMode(colorMode)
+	//	this.routes.setColorMode(colorMode)
 	}
 
 	// **********************************************************
 
 
 	// Add a location to the list
-	_addLocation = (name, coords, metadata = {}) => {
-		const existingLocation = this.locations.features.find(location => location.properties.name == name)
+	_addLocation = (location) => {
+		const existingLocation = this.locations.features.find(loc => loc.properties.name == location.properties.name)
 		if(!existingLocation){
-			this.locations.features.push({
-				type: 'Feature',
-				geometry: {
-					type: 'Point',
-					coordinates: coords
-				},
-				properties: {
-					name: name,
-				//	centroidWeight: 1,
-					isInclude: true,
-					isVisible: true,
-					...metadata
+			this.locations.features.push(location)
+		}
+	}
+
+	// **********************************************************
+
+	_generateRoutes = (locations = this.locations.features) => {
+		this.routes.features = []
+
+		// Iterate over, find hubs and draw lines from there
+		for (const hubLocation of locations.filter(location => location.properties.isHub && location.properties.isVisible)) {
+			// Only build routes to/from the hubs
+			const trust = hubLocation.properties.trust
+			const hubCoords = hubLocation.geometry.coordinates
+
+			const nodes = locations.filter(location => location.properties.trust == trust && location.properties.isInclude)
+
+			for(let node of nodes){
+				if(node == hubLocation){
+					// Do not connect to self
+					continue
 				}
-			})
+				const nodeCoords = node.geometry.coordinates
+				const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
+				const newRoute = {
+					type: "Feature",
+					properties: {
+						id: 				Math.random()*10000,
+						source: 			hubLocation.properties.name,
+						destination: 	node.properties.name,
+						crowDistance: 	distance,
+						pathDistance: 	distance,
+						trust:			trust,
+						nodeType:		node.properties.type,
+						color: 			this.options.color,
+						isVisible:		true
+					},
+					geometry: {
+						type: 'LineString',
+						coordinates: [
+							hubCoords,
+							nodeCoords,
+						]
+					}
+				}
+				this.routes.features.push(newRoute)
+			}
 		}
 	}
 }

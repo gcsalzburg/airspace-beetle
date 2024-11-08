@@ -60,7 +60,32 @@ export default class{
 	}
 
 	sendToMap = () => {
-		this.options.onNewDataReady(this.locationsArray)
+
+		// Convert data to geoJSON data
+		let locationsGeoJSON = {
+			type: "FeatureCollection",
+			features: []
+		}
+
+		for(let location of this.locationsArray){
+			locationsGeoJSON.features.push({
+				type: 'Feature',
+				geometry: {
+					type: 'Point',
+					coordinates: location.coordinates
+				},
+				properties: {
+					name: location.name,
+					trust: location.trust,
+					isHub: location.isHub,
+					type: location.type,
+					isInclude: true,
+					isVisible: true,
+				}
+			})
+		}
+		
+		this.options.onNewDataReady(locationsGeoJSON)
 	}
 
 	// **********************************************************

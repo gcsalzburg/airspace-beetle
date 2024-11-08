@@ -16,14 +16,12 @@ export default class{
 		this.options = {...this.options, ...options}
 	}
 
-	removeFromMap = (emptyList = false) => {
+	removeFromMap = () => {
 		// Clear old markers
 		for(let marker of this.list){
 			marker.remove()
 		}
-		if(emptyList){
-			this.list = []
-		}
+		this.list = []
 	}
 
 	addToMap = (locations) => {
@@ -68,6 +66,9 @@ export default class{
 				}
 				if(!feature.properties.isHub){
 					if(e.shiftKey){
+						if(!feature.properties.isInclude){
+							return
+						}
 						// Turning into the hub!
 						const currentHub = locations.find(location => location.properties.trust == feature.properties.trust && location.properties.isHub)
 						currentHub.properties.isHub = false

@@ -15,7 +15,6 @@ export default class{
 		max: 10,
 		min: 0
 	}
-
 	colorMode = 'network'
 
 	currentNetworkFilter = null
@@ -65,7 +64,7 @@ export default class{
 					['boolean', ['feature-state', 'showThisNetwork'], true],
 						[
 							'case',
-							['<=', ['to-number', ['get', 'pathDistance']], ['to-number', ['feature-state', 'droneRange']]],
+							['<=', ['to-number', ['get', 'pathDistance']], ['to-number', ['feature-state', 'droneMaxRange']]],
 								[
 									'case',
 									['>=', ['to-number', ['get', 'pathDistance']], ['to-number', ['feature-state', 'droneMinRange']]],
@@ -98,90 +97,15 @@ export default class{
 		})
 	}
 
-	// **********************************************************
-
-	getRoutes = () => {
-		return this.routes.features.filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min))
-	}
-
-	getVisibleCount = () => {
-		return this.routes.features.filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min)).length
-	}
-
-	getTotalCount = () => {
-		return this.routes.features.length
-	}
-
-	getTotalIncludedInRange = () => {
-		return 0
-	}
-
-	getRouteProperties = () => {
-		return {
-			total: 			this.routes.features.length,
-			totalInRange:	this.routes.features.filter(feature => feature.properties.pathDistance <= this.range.max && feature.properties.pathDistance >= this.range.min).length,
-			minLength: 		this.routes.features.reduce((min, feature) => Math.min(min, feature.properties.pathDistance), Infinity),
-			maxLength: 		this.routes.features.reduce((max, feature) => Math.max(max, feature.properties.pathDistance), -Infinity)
-		}
-	}
-
 
 	// **********************************************************
-/*
-	empty = () => {
-		this.routes.features = []
-	}*/
 
-	rebuildFromLocations = async (locations) => {
+	drawRoutes = async (routeData) => {
 
-		this.routes.features = []
-
-		// Iterate over, find hubs and draw lines from there
-		for (const hubLocation of locations.filter(location => location.properties.isHub && location.properties.isVisible)) {
-			// Only build routes to/from the hubs
-			const trust = hubLocation.properties.trust
-			const hubCoords = hubLocation.geometry.coordinates
-
-			const nodes = locations.filter(location => location.properties.trust == trust && location.properties.isInclude)
-
-			for(let node of nodes){
-				if(node == hubLocation){
-					// Do not connect to self
-					continue
-				}
-				const nodeCoords = node.geometry.coordinates
-				const distance = turf.distance(hubCoords, nodeCoords, {units: 'kilometers'})
-				const newRoute = {
-					type: "Feature",
-					properties: {
-						id: 				Math.random()*10000,
-						source: 			hubLocation.properties.name,
-						destination: 	node.properties.name,
-						crowDistance: 	distance,
-						pathDistance: 	distance,
-						trust:			trust,
-						nodeType:		node.properties.type,
-						color: 			this.options.color
-					},
-					geometry: {
-						type: 'LineString',
-						coordinates: [
-							hubCoords,
-							nodeCoords,
-						]
-					}
-				}
-				this.routes.features.push(newRoute)
-			}
-		}
-
-		await this.drawRoutes()
-	}
-
-	drawRoutes = async () => {
+		this.routes = routeData
 
 		// Reapply the new routes
-		this.options.map.getSource(this.layerName).setData(this.routes)
+		this.options.map.getSource(this.layerName).setData(routeData)
 
 		await new Promise(resolve => {
 			const checkData = (e) => {
@@ -200,7 +124,6 @@ export default class{
 	}
 
 	remove = () => {
-		this.routes.features = []
 		this.options.map.removeLayer(this.layerName)
 		this.options.map.removeSource(this.layerName)
 	}
@@ -253,7 +176,7 @@ export default class{
 		for(let feature of this.routes.features){
 			this.options.map.setFeatureState(
 				{source: this.layerName, id: feature.properties.id},
-				{droneRange: range}
+				{droneMaxRange: range}
 			)
 		}
 
@@ -324,14 +247,13 @@ export default class{
 		// Clear highlighting
 		if(!feature){
 			if (this.hoveredRoute !== null) {
+				this.options.onRouteMouseLeave(this.hoveredRoute.properties.trust)
 				this.options.map.setFeatureState(
-					{source: this.layerName, id: this.hoveredRoute},
+					{source: this.layerName, id: this.hoveredRoute.id},
 					{hover: false}
 				)
 				this.hoveredRoute = null
 			}
-			this.options.onRouteMouseLeave()
-
 		}else{
 
 			// Don't do anything if this is not a filtered network
@@ -346,19 +268,19 @@ export default class{
 				// Unhighlight current hovered one
 				if (this.hoveredRoute !== null) {
 					this.options.map.setFeatureState(
-						{source: this.layerName, id: this.hoveredRoute},
+						{source: this.layerName, id: this.hoveredRoute.id},
 						{hover: false}
 					)
 				}
 
 				// Highlight new one
-				this.hoveredRoute = feature.id
+				this.hoveredRoute = feature
 				this.options.map.setFeatureState(
 					{source: this.layerName, id: feature.id},
 					{hover: true}
 				)
 
-				this.options.onRouteMouseOver(feature.properties.source, feature.properties.destination, feature.properties.pathDistance)
+				this.options.onRouteMouseOver(feature.properties.trust, feature.properties.source, feature.properties.destination, feature.properties.pathDistance)
 			}
 		}
 	}

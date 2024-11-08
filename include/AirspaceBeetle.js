@@ -186,7 +186,7 @@ export default class{
 					this._recalculateStats()
 					this.saveToStorage()
 				},
-				onRouteMouseOver: (sourceName, destinationName, length) => {
+				onRouteMouseOver: (length) => {
 					this.setFollowerDistance(length)	// Set the follower with distance
 					this.setCursor('routeHover')		// Set cursor
 				},
@@ -292,9 +292,7 @@ export default class{
 	
 	// Update geoJSON from updated CSV data
 	importNewLocations = async (newLocations) => {
-
-		this.networks.importCSVLocations(newLocations)
-		await this.networks.render()
+		await this.networks.importGeoJSON(newLocations)
 		this._recalculateStats()
 		this._zoomToLocations()
 		this.saveToStorage()
@@ -394,8 +392,7 @@ export default class{
 			}
 
 			if(loadedDataJSON.locations){
-				this.networks.importGeoJSONLocations(loadedDataJSON.locations)
-				await this.networks.render()
+				await this.networks.importGeoJSON(loadedDataJSON.locations)
 
 				this.networks.setDroneMaxRange(this.featureOptions.droneRange)
 				this.networks.setDroneMinRange(this.featureOptions.droneMinRange)
