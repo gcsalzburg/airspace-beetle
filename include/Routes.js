@@ -25,22 +25,22 @@ export default class{
 
 	constructor(options){
 		this.options = {...this.options, ...options}
+		this.layerName = `${this.options.layerName}-routes`
 	}
 
 	init = () => {
 
 		// Just in case we call this again (sometimes happen when changing base map style)
-		if(this.options.map.getSource('routes')){
-			this.options.map.removeLayer('routes')
-			this.options.map.removeSource('routes')
+		if(this.options.map.getSource(this.layerName)){
+			this.remove()
 		}
 
 		// Add the routes source and layer to the map
-		this.options.map.addSource('routes', {type: 'geojson', data: this.routes, 'promoteId': "id"})
+		this.options.map.addSource(this.layerName, {type: 'geojson', data: this.routes, 'promoteId': "id"})
 		this.options.map.addLayer({
-			'id': 'routes',
+			'id': this.layerName,
 			'type': 'line',
-			'source': 'routes',
+			'source': this.layerName,
 			'layout': {
 				'line-join': 'round',
 				'line-cap': 'round'
@@ -87,12 +87,12 @@ export default class{
 		this.setColorMode()
 
 		// Add hover effects to routes
-		this.options.map.on('mousemove', 'routes', (e) => {
+		this.options.map.on('mousemove', this.layerName, (e) => {
 			if (e.features.length > 0) {
 				this._highlightRoute(e.features[0])
 			}
 		})
-		this.options.map.on('mouseleave', 'routes', () => {
+		this.options.map.on('mouseleave', this.layerName, () => {
 			// Clear the route highlighting effect
 			this._highlightRoute()
 		})
@@ -102,6 +102,18 @@ export default class{
 
 	getRoutes = () => {
 		return this.routes.features.filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min))
+	}
+
+	getVisibleCount = () => {
+		return this.routes.features.filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min)).length
+	}
+
+	getTotalCount = () => {
+		return this.routes.features.length
+	}
+
+	getTotalIncludedInRange = () => {
+		return 0
 	}
 
 	getRouteProperties = () => {
@@ -115,14 +127,14 @@ export default class{
 
 
 	// **********************************************************
-
+/*
 	empty = () => {
 		this.routes.features = []
-	}
+	}*/
 
-	rebuildFromLocations = async (locations, colors) => {
+	rebuildFromLocations = async (locations) => {
 
-		this.empty()
+		this.routes.features = []
 
 		// Iterate over, find hubs and draw lines from there
 		for (const hubLocation of locations.filter(location => location.properties.isHub && location.properties.isVisible)) {
@@ -149,7 +161,7 @@ export default class{
 						pathDistance: 	distance,
 						trust:			trust,
 						nodeType:		node.properties.type,
-						color: 			colors.find(t => t.name == trust).color
+						color: 			this.options.color
 					},
 					geometry: {
 						type: 'LineString',
@@ -169,14 +181,15 @@ export default class{
 	drawRoutes = async () => {
 
 		// Reapply the new routes
-		this.options.map.getSource('routes').setData(this.routes)
+		this.options.map.getSource(this.layerName).setData(this.routes)
 
 		await new Promise(resolve => {
 			const checkData = (e) => {
 				// Via: https://gis.stackexchange.com/a/282140
-				if (e.sourceId === 'routes' && e.isSourceLoaded && e.sourceDataType !== 'metadata'){
+				if (e.sourceId === this.layerName && e.isSourceLoaded && e.sourceDataType !== 'metadata'){
 					this.setMaxRange(this.range.max)
 					this.setMinRange(this.range.min)
+					this.setColorMode(this.colorMode)
 					this.options.map.off('sourcedata', checkData)
 					resolve()
 				}
@@ -184,6 +197,12 @@ export default class{
 			this.options.map.on('sourcedata', checkData)
 	  })
 		return true
+	}
+
+	remove = () => {
+		this.routes.features = []
+		this.options.map.removeLayer(this.layerName)
+		this.options.map.removeSource(this.layerName)
 	}
 
 	// **********************************************************
@@ -194,7 +213,7 @@ export default class{
 		if(!network){
 			for(let feature of this.routes.features){
 				this.options.map.setFeatureState(
-					{source: 'routes', id: feature.properties.id},
+					{source: this.layerName, id: feature.properties.id},
 					{showThisNetwork: true}
 				)
 			}
@@ -205,20 +224,20 @@ export default class{
 		// Set all routes to false
 		for(let feature of this.routes.features){
 			this.options.map.setFeatureState(
-				{source: 'routes', id: feature.properties.id},
+				{source: this.layerName, id: feature.properties.id},
 				{showThisNetwork: false}
 			)
 		}
 		// Filter routes by which ones are within range
-		const validRoutes = this.options.map.querySourceFeatures('routes', {
-			sourceLayer: 'routes',
+		const validRoutes = this.options.map.querySourceFeatures(this.layerName, {
+			sourceLayer: this.layerName,
 			filter: ['==', 'trust', network]
 		})
 
 		// For each valid route, set the feature as being within range
 		validRoutes.forEach((feature) => {
 			this.options.map.setFeatureState(
-				{source: 'routes', id: feature.id},
+				{source: this.layerName, id: feature.id},
 				{showThisNetwork: true}
 			)
 		})
@@ -233,7 +252,7 @@ export default class{
 		
 		for(let feature of this.routes.features){
 			this.options.map.setFeatureState(
-				{source: 'routes', id: feature.properties.id},
+				{source: this.layerName, id: feature.properties.id},
 				{droneRange: range}
 			)
 		}
@@ -250,7 +269,7 @@ export default class{
 
 		for(let feature of this.routes.features){
 			this.options.map.setFeatureState(
-				{source: 'routes', id: feature.properties.id},
+				{source: this.layerName, id: feature.properties.id},
 				{droneMinRange: range}
 			)
 		}
@@ -292,8 +311,9 @@ export default class{
 				paintProperty = '#ffc03a'
 				break
 		}
-
-		this.options.map.setPaintProperty('routes', 'line-color', paintProperty)
+		if(this.options.map.getSource(this.layerName)){
+			this.options.map.setPaintProperty(this.layerName, 'line-color', paintProperty)
+		}
 	}
 
 	// **********************************************************
@@ -301,16 +321,16 @@ export default class{
 	_highlightRoute = (feature = null) => {
 
 
-		// Clear highligthing
+		// Clear highlighting
 		if(!feature){
 			if (this.hoveredRoute !== null) {
 				this.options.map.setFeatureState(
-					{source: 'routes', id: this.hoveredRoute},
+					{source: this.layerName, id: this.hoveredRoute},
 					{hover: false}
 				)
 				this.hoveredRoute = null
 			}
-			this.options.onClearHighlight()
+			this.options.onRouteMouseLeave()
 
 		}else{
 
@@ -326,7 +346,7 @@ export default class{
 				// Unhighlight current hovered one
 				if (this.hoveredRoute !== null) {
 					this.options.map.setFeatureState(
-						{source: 'routes', id: this.hoveredRoute},
+						{source: this.layerName, id: this.hoveredRoute},
 						{hover: false}
 					)
 				}
@@ -334,11 +354,11 @@ export default class{
 				// Highlight new one
 				this.hoveredRoute = feature.id
 				this.options.map.setFeatureState(
-					{source: 'routes', id: feature.id},
+					{source: this.layerName, id: feature.id},
 					{hover: true}
 				)
 
-				this.options.onHighlightRoute(feature.properties.source, feature.properties.destination, feature.properties.pathDistance)
+				this.options.onRouteMouseOver(feature.properties.source, feature.properties.destination, feature.properties.pathDistance)
 			}
 		}
 	}

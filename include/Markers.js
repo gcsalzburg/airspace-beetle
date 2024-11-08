@@ -26,7 +26,7 @@ export default class{
 		}
 	}
 
-	addToMap = (locations, networks) => {
+	addToMap = (locations) => {
 
 		// Add markers for all locations that are filtered to be visible
 		for (const feature of locations.filter(location => location.properties.isVisible)) {
@@ -37,7 +37,7 @@ export default class{
 			el.dataset.name = `${feature.properties.name}`
 			el.dataset.type = feature.properties.type
 			el.dataset.trust = feature.properties.trust
-			el.dataset.trustColor = networks.find(network => network.name == feature.properties.trust).color
+			el.dataset.trustColor = this.options.color
 
 			// Set default to be the trustColor
 			el.style = `--this-marker-color: ${el.dataset.trustColor}`
@@ -96,14 +96,14 @@ export default class{
 			document.querySelector(`.marker[data-name="${labels}"]`).classList.add('show-label')
 		}
 	}
-
+/*
 	removeNetwork = (networkName) => {
 		for(let marker of this.list){
 			if(marker.getElement().dataset.trust == networkName){
 				marker.remove()
 			}
 		}
-	}
+	}*/
 /*
 	toggleNetwork = (networkName, isVisible) => {
 		for(let marker of this.list){

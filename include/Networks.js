@@ -1,59 +1,250 @@
-import List from './List.js'
+import Network from './Network.js'
 
-export default class extends List{
+export default class{
+
+	// Default options are below
+	options = {
+		listContainer: null,
+		onListMouseLeave: () => {}
+	}
+
+	networks = []
 
 	constructor(options){
 
-		super(options)
+		this.options = {...this.options, ...options}
+		this.map = this.options.map
 
-		if(this.options.listContainer){
+			/*	
+				onToggleNetworks: async (networkNames, isVisible) => {
+					this.toggleLocationVisibility(networkNames, isVisible)
+					await this.routes.rebuildFromLocations(this.mapData.locations.features, this.networks.get())
+					// TODO: Add/delete centroid for this network here
+				}*/
 
-			// Add hover effects to list of networks on side
-			this.options.listContainer.addEventListener('mousemove', (e) => {
-				const network = e.target.closest('.network')
-				if(network){
-					if(network.classList.contains('isVisible')){
-						this.options.onListMouseMove(network.dataset.name)
-					}else{
-						this.options.onListMouseLeave()
-					}
+
+
+
+		// Add hover effects to list of networks on side
+		this.options.listContainer.addEventListener('mousemove', (e) => {
+			const network = e.target.closest('.network')
+			if(network){
+				if(network.classList.contains('isVisible')){
+					this._showOnly(network.dataset.name)
+				}else{
+					this._removeShowOnly()
 				}
-			})
-			this.options.listContainer.addEventListener('click', (e) => {
-				e.preventDefault()
-				const network = e.target.closest('.network')
+			}
+		})
+		this.options.listContainer.addEventListener('mouseleave', (e) => {
+			this._removeShowOnly()
+		})
 
-				if(network){
-					if(e.shiftKey){
-						// Hold down shift to show only this network
-						this._isolateVisibility(network)
-					}else{
-						// Otherwise just toggle the network visibility
-						this._toggleVisibility(network, !network.classList.contains('isVisible'))
-					}
+		// Add click effects to list of networks on the side
+		this.options.listContainer.addEventListener('click', (e) => {
+			e.preventDefault()
+			const network = e.target.closest('.network')
+
+			if(network){
+				if(e.shiftKey){
+					// Hold down shift to show only this network
+					this._showOnlyNetwork(network.dataset.name)
+					this.options.onChange()
+				}else{
+					// Otherwise just toggle the network visibility
+					this._showHideNetwork(network.dataset.name, !network.classList.contains('isVisible'))
+					this.options.onChange()
 				}
-			})
-			this.options.listContainer.addEventListener('mouseleave', (e) => {
-				this.options.onListMouseLeave()
-			})
+			}
+		})
+
+	}
+
+	// TODO: Merge the two functions below into one
+
+	importCSVLocations = (locations) => {
+
+		// delete everything that was there before
+		this._deleteAll()
+
+		// Load new data
+		for(let location of locations){
+			if(!this.networks.map(network => network.name).includes(location.trust)){
+				// Must be a new network, so use this location as the basis to build the network
+				// Find all the locations for this network
+				const newNetwork = new Network({
+					map: this.map,
+					name: location.trust,
+					isVisible: true,
+					color: `hsl(${(this.networks.length*39)%360}, 82%, 43%)`,
+					locations: locations.filter(item => item.trust == location.trust),
+					onRouteMouseOver: (sourceName, destinationName, length) => {
+						this.options.onRouteMouseOver(sourceName, destinationName, length)
+					},
+					onRouteMouseLeave: () => {
+						this.options.onRouteMouseLeave()
+					},
+					onChange: () => {
+						this.options.onChange()
+					}
+
+				})
+				this.networks.push(newNetwork)
+			}
 		}
 	}
 
-	renderDOMList = () => {
+	importGeoJSONLocations = (locations) => {
+
+		console.log('loading from geojson')
+
+		// delete everything that was there before
+		this._deleteAll()
+
+		// Load new data
+		for(let location of locations.features){
+			if(!this.networks.map(network => network.name).includes(location.properties.trust)){
+				// Must be a new network, so use this location as the basis to build the network
+				// Find all the locations for this network
+				const newNetwork = new Network({
+					map: this.map,
+					name: location.properties.trust,
+					isVisible: location.properties.isVisible,
+					color: `hsl(${(this.networks.length*39)%360}, 82%, 43%)`,
+					locations: locations.features.filter(item => item.properties.trust == location.properties.trust).map(item => ({
+						name: item.properties.name,
+						coordinates: item.geometry.coordinates,
+						type: item.properties.type,
+						trust: item.properties.trust,
+						isHub: item.properties.isHub
+					})),
+					onRouteMouseOver: (sourceName, destinationName, length) => {
+						this.options.onRouteMouseOver(sourceName, destinationName, length)
+					},
+					onRouteMouseLeave: () => {
+						this.options.onRouteMouseLeave()
+					},
+					onChange: () => {
+						this.options.onChange()
+					}
+
+				})
+				this.networks.push(newNetwork)
+			}
+		}
+
+	}
+
+	render = async () => {
+		// Render each network
+		for(let network of this.networks){
+			await network.render()
+		}
+
+		// Render the DOMList
+		this._renderDOMList()
+	}
+
+	reloadRoutes = async () => {
+		// Render each network
+		for(let network of this.networks){
+			await network.reloadRoutes()
+		}
+	}
+
+	// **********************************************************	
+	// Getters
+
+	getLocations = () => {
+		return {
+			type: "FeatureCollection",
+			features: this.networks.reduce((featuresArray, network) => [...featuresArray, ...(network.locations.features)], [])				
+		}
+	}
+
+	getTotals = () => {
+		return {
+			numRoutes: this.networks.reduce((sum, network) => sum + network.routes.getVisibleCount(), 0),
+			numLocations: this.getLocations().features.length,
+			numNetworks: this.networks.length,
+			maxRouteLength: this.networks.reduce((max, network) => Math.max(max, network.routes.getRouteProperties().maxLength), 0)
+		}
+	}
+
+	// **********************************************************	
+	// Setters
+
+	// Drone range handling
+	setDroneMaxRange = (range) => {
+		// Save the range
+		for(let network of this.networks){
+			// TODO: Remove use of network.routes and make routes a private _routes inside network class
+			network.routes.setMaxRange(range)
+		}
+	}
+	setDroneMinRange = (range) => {
+		// Save the range
+		for(let network of this.networks){
+			network.routes.setMinRange(range)
+		}
+	}
+
+	setRouteColor = (colorMode) => {
+		for(let network of this.networks){
+			network.setRouteColor(colorMode)
+		}
+	}
+
+	setMarkerColor = (colorMode) => {
+		for(let network of this.networks){
+			network.setMarkerColor(colorMode)
+		}
+	}
+	
+	// **********************************************************	
+
+	// delete everything that was there before
+	_deleteAll = () => {
+		for(let network of this.networks){
+			network.empty()
+		}
+		this.networks = []
+	}
+
+	_showOnly = (networkName) => {
+		// TODO make this way more efficient
+		// can just turn the whole thing on or off
+		for(let network of this.networks){
+			network.markers.filterByNetwork(networkName)
+			network.routes.filterByNetwork(networkName)
+		}
+
+	}
+
+	_removeShowOnly = () => {
+		// TODO make this way more efficient
+		for(let network of this.networks){
+			network.markers.filterByNetwork()
+			network.routes.filterByNetwork()
+		}
+	}
+
+	_renderDOMList = () => {
 		if(this.options.listContainer){
 			// Update the list
-			this.options.listContainer.innerHTML = this.list.reduce((html, item) => {
-				const itemHTML = `<div class="network isVisible" data-name="${item.name}"><span class="num" style="background-color: ${item.color}">${item.count} / ${item.total}</span> ${item.name}</div>`
-				return html + itemHTML
+			this.options.listContainer.innerHTML = this.networks.reduce((html, network) => {
+				const stats = network.getStats()
+				const networkHTML = `<div class="network ${network.isVisible ? 'isVisible' : ''}" data-name="${network.name}"><span class="num" style="background-color: ${network.color}">${stats.totalIncludedInRange} / ${stats.totalRoutes}</span> ${network.name}</div>`
+				return html + networkHTML
 			}, '')
 
 			// Add show and hide all buttons
 			this.options.listContainer.insertAdjacentHTML('afterBegin', `<div class="show-hide-all-buttons"><a href="#show-all">Show all</a> <a href="#hide-all">Hide all</a></div>`)
 			this.options.listContainer.querySelector('a[href="#show-all"]').addEventListener('mousemove', () => {
-				this.options.onListMouseLeave()
+				this._removeShowOnly()
 			})
 			this.options.listContainer.querySelector('a[href="#hide-all"]').addEventListener('mousemove', () => {
-				this.options.onListMouseLeave()
+				this._removeShowOnly()
 			})
 			this.options.listContainer.querySelector('a[href="#show-all"]').addEventListener('click', (e) => {
 				e.preventDefault()
@@ -66,80 +257,67 @@ export default class extends List{
 		}
 	}
 
-	toggleInList = (networkName, isVisible) => {
-		document.querySelector(`.network[data-name="${networkName}"]`).classList.toggle('isVisible', isVisible)
-	}
 
-	updateCounts = (dataCounts, dataTotals) => {
-		for(let item of this.list){
-			if(dataCounts[item.name]){
-				item.count = dataCounts[item.name]
-				item.total = dataTotals[item.name]
-			}else{
-				item.count = 0
-			}
-		}
-		this.sort()
-	}
+	_showHideNetwork = async (networkName, state) => {
 
-	_toggleVisibility = async (networkItem = null, state = false) => {
-
-		if(!networkItem){
-			return
-		}
-
-		const networkName = networkItem.dataset.name
-
-		networkItem.classList.toggle('isVisible', state)
-		this.list.find(item => item.name == networkName).isVisible = state
-		await this.options.onToggleNetworks([networkName], state)
+		const network = this.networks.find(item => item.name == networkName)
 
 		if(state){
-			this.options.onListMouseMove(networkName)
+			await network.show()
+			this._showOnly(networkName)
 		}else{
-			this.options.onListMouseLeave()
+			network.hide()
+			this._removeShowOnly()
 		}
+
+		this._toggleInList(networkName, state)
+
 	}
 
-	// Shortcut to hide all others and show just this one
-	_isolateVisibility = async (networkItem = null, force = false) => {
-		if(!networkItem){
-			return
+	_showOnlyNetwork = async (networkName) => {
+
+		// Adjust network states
+		for(let network of this.networks.filter(item => item.name != networkName)){
+			network.hide()
 		}
+		this.networks.find(item => item.name == networkName).show()
 
-		const networkName = networkItem.dataset.name
-
-		// First call this, to reset the view
-		this.options.onListMouseLeave()
-
-		// Hide all others
+		// Adjust in list
 		document.querySelectorAll(`.network:not([data-name="${networkName}"])`).forEach(networkElm => {
 			networkElm.classList.remove('isVisible')
 		})
-		this.list.filter(item => item.name != networkName).forEach(network => {
-			network.isVisible = false
-		})
-		await this.options.onToggleNetworks(this.list.filter(item => item.name != networkName).map(network => network.name), false)
-
-		// Show this one
-		networkItem.classList.add('isVisible')
-		this.list.find(item => item.name == networkName).isVisible = true
-		await this.options.onToggleNetworks([networkName], true)
-
-		// Trigger this, just in case it was hidden previously
-		this.options.onListMouseMove(networkName)
+		document.querySelector(`.network[data-name="${networkName}"]`).classList.add('isVisible')
 	}
 
-	_showAll = async () => {
-		document.querySelectorAll(`.network`).forEach(networkElm => {
-			networkElm.classList.add('isVisible')
-		})
-		await this.options.onToggleNetworks(this.list.map(network => network.name), true)
+	// TODO: No need for this in future
+	_toggleInList = (networkName, isVisible) => {
+		document.querySelector(`.network[data-name="${networkName}"]`).classList.toggle('isVisible', isVisible)
 	}
-	_hideAll = async () => {
-		document.querySelectorAll(`.network`).forEach(networkElm => {
-			networkElm.classList.remove('isVisible')
-		})
-		await this.options.onToggleNetworks(this.list.map(network => network.name), false)
-	}
+
+
+
+
+
+
+	/*
+
+
+	onHubChange: (oldHub, newHub) => {
+
+				// Update geoJSON
+			Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", oldHub).properties.isHub  = false
+			Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", newHub).properties.isHub  = true	
+			
+			this.regenerateMap({centroids: false})
+		//	this.centroids.updateLocations(this.mapData.locations.features)
+		},
+		onToggleInclude: (locationName, isInclude) => {
+
+			// Update geoJSON
+			Utils.findObjectByProperty(this.mapData.locations.features, "properties.name", locationName).properties.isInclude = isInclude
+
+			this.regenerateMap({centroids: false})
+		//	this.centroids.updateLocations(this.mapData.locations.features.filter(location => location.properties.isVisible))
+		}
+*/
 }
