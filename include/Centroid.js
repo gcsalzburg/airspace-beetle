@@ -51,7 +51,7 @@ export default class{
 			},
 			'paint': {
 				'line-color': this.options.color,
-				'line-dasharray': [0.5,2],
+				'line-dasharray': [1,2],
 				'line-width': 3,
 				'line-blur': 2,
 				'line-opacity': 0.7
@@ -130,10 +130,10 @@ export default class{
 		const circleOptions = {
 			editable: false,
 			fillColor: this.options.color,
-			fillOpacity: 0.03,
+			fillOpacity: 0.1,
 			strokeWeight: 1,
 			strokeColor: this.options.color,
-			strokeOpacity: 0.3
+			strokeOpacity: 0.5
 		}
 
 		this.circle = new MapboxCircle({lat: this.options.center[1], lng: this.options.center[0]}, this.options.droneRange*1000, circleOptions)
