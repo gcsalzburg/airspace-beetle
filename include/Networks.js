@@ -138,11 +138,13 @@ export default class{
 		this._renderDOMList()
 	}
 
-	reloadRoutes = async () => {
-		// Render each network
-		for(let network of this.networks){
-			await network.reloadRoutes()
-		}
+	reRenderAfterStyleChange = async () => {
+		// Re-render the routes, e.g. after a style change
+		this.routes.init()
+		await this.routes.drawRoutes({
+			type: "FeatureCollection",
+			features: this.networks.filter(network => network.isVisible).reduce((routesArray, network) => [...routesArray, ...(network.getRoutes())], [])
+		})
 	}
 
 	// **********************************************************	
@@ -180,9 +182,7 @@ export default class{
 	}
 
 	setRouteColor = (colorMode) => {
-		for(let network of this.networks){
-			network.setRouteColor(colorMode)
-		}
+		this.routes.setColorMode(colorMode)
 	}
 
 	setMarkerColor = (colorMode) => {

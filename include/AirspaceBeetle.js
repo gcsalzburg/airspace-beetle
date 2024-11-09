@@ -1,13 +1,6 @@
-
-import * as Utils from './Utils.js'
-import Markers from './Markers.js'
 import Networks from './Networks.js'
-import Routes from './Routes.js'
-import LocationTypes from './LocationTypes.js'
 import RangeSlider from './RangeSlider.js'
 import Select from './Select.js'
-import Centroids from './Centroids.js'
-import Network from './Network.js'
 
 export default class{
 
@@ -259,7 +252,7 @@ export default class{
 
 		// For when changing the base map
 		this.map.once('style.load', async (e) => {
-			await this.networks.reloadRoutes()
+			await this.networks.reRenderAfterStyleChange()
 		})
 		this.map.setStyle(this.getStyleURLFromStyle(style))
 

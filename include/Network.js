@@ -101,9 +101,6 @@ export default class{
 	setMarkerColor = (colorMode) => {
 		this.markers.setColorMode(colorMode)
 	}
-	setRouteColor = (colorMode) => {
-	//	this.routes.setColorMode(colorMode)
-	}
 
 	// **********************************************************
 
