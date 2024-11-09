@@ -78,6 +78,9 @@ export default class{
 	}
 
 	setLocations = (locations) => {
+		if(!locations || locations.length <= 0){
+			return
+		}
 		this.options.locations = locations
 
 		this.options.hubCenter = this.options.locations.find(location => location.properties.isHub).geometry.coordinates

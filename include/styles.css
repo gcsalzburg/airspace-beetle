@@ -327,12 +327,15 @@ main{
 	display: block;
 	color: white;
 	font-size: 1em;
-	padding: 0.35em 0.8em 0.25em;
+	padding: 0.35em 0.8em 0.35em;
 	margin-right: 0.4em;
 	font-weight: 300;
+	border-style: solid solid none solid;
+	border-width: 1px;
+	border-color: transparent;
 }
 .options-panel-nav a:hover{
-	padding-bottom: 0.35em;
+	border-color: var(--color-accent);
 }
 
 .options-panel-detail{
@@ -364,6 +367,11 @@ main{
 	background: var(--color-accent);
 	color: black;
 	padding-bottom: 0.35em;
+}
+
+.color-selectors{
+	border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+	margin-bottom: 1em;
 }
 
 .color-selector-warning{
@@ -418,6 +426,7 @@ main{
 .select-wrapper label{
 	min-width: 30%;
 	flex-grow: 1;
+	align-items: center;
 }
 .select-wrapper select{
 	padding: 0.4em 0.8em 0.4em 0.4em;

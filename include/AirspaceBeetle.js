@@ -136,19 +136,6 @@ export default class{
 			}
 		})
 
-		// TODO: Move this locationTypes bit into the centroids main class
-	/*	this.types = new LocationTypes({
-			listContainer: this.options.dom.weightsSliders,
-			onSliderChange: (type, weight) => {
-				for(let location of this.mapData.locations.features){
-					if(location.properties.type == type){
-						location.properties.centroidWeight = weight
-					}
-				}
-			//	this.centroids.updateLocations(this.mapData.locations.features)
-			}
-		})*/
-
 		// Do this early to switch to correct tab immediately
 		if(this.hasMapDataStorage()){
 			this.options.onHasStorageData()
@@ -271,6 +258,10 @@ export default class{
 			default:
 				return 'mapbox://styles/annamitch/clsded3i901rg01qyc16p8dzw'
 		}
+	}
+
+	toggleCentroids = (state) => {
+		this.networks.toggleCentroids(state)
 	}
 
 	// **********************************************************

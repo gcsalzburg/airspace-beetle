@@ -1,4 +1,5 @@
 import Markers from './Markers.js'
+import Centroid from './Centroid.js'
 
 export default class{
 
@@ -51,6 +52,18 @@ export default class{
 	}
 
 	// **********************************************************
+	// Importing data
+
+	// Add a location to the list
+	_addLocation = (location) => {
+		const existingLocation = this.locations.features.find(loc => loc.properties.name == location.properties.name)
+		if(!existingLocation){
+			this.locations.features.push(location)
+		}
+	}
+
+	// **********************************************************
+	// Getters
 
 	getRoutes = () => {
 		return this.routes.features
@@ -69,6 +82,7 @@ export default class{
 	}
 
 	// **********************************************************
+	// Public setters/fns
 
 	rebuildRoutesAndMarkers = async () => {
 
@@ -76,6 +90,10 @@ export default class{
 		this.markers.removeFromMap()
 		if(this.isVisible){
 			this.markers.addToMap(this.locations.features)
+		}
+
+		if(this.centroid){
+			this.centroid.setLocations(this.locations.features.filter(location => location.properties.isInclude))
 		}
 	}
 
@@ -102,14 +120,32 @@ export default class{
 		this.markers.setColorMode(colorMode)
 	}
 
+	// We call this to clear the map before we load in new geoJSON data
+	removeMarkers = () => {
+		this.markers.removeFromMap()
+	}
+
 	// **********************************************************
+	// Centroids
 
+	addCentroid = (droneRange) => {
+		if(this.centroid){
+			this.centroid.setDroneRange(droneRange)
+			return
+		}
+		this.centroid = new Centroid({
+			map: this.map,
+			show: true,
+			color: this.color,
+			trust: this.name,
+			droneRange: droneRange,
+			locations: this.locations.features.filter(location => location.properties.isInclude)
+		})
+	}
 
-	// Add a location to the list
-	_addLocation = (location) => {
-		const existingLocation = this.locations.features.find(loc => loc.properties.name == location.properties.name)
-		if(!existingLocation){
-			this.locations.features.push(location)
+	updateCentroidRange = (droneRange) => {
+		if(this.centroid){
+			this.centroid.setDroneRange(droneRange)
 		}
 	}
 

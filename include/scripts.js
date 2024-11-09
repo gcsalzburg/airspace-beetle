@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	const csvImporter = new DataImporter({
 		onNewDataReady: (newData) => {
-			myNetwork.importNewLocations(newData)
+			myBeetle.importNewLocations(newData)
 			document.querySelector('.options-panel').dataset.option = 'view'
 			localStorage.setItem('optionsView', 'view')
 		},
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 	})
 
-	const	myNetwork = new AirspaceBeetle({
+	const	myBeetle = new AirspaceBeetle({
 
 		follower: new Follower({
 			styles: {
@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 			case 'map':
 				document.body.dataset.panel = 'map'
-				myNetwork.updateMapContainer()
+				myBeetle.updateMapContainer()
 				break
 		}
 	}
@@ -112,12 +112,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 				break
 
 			case 'export-geojson':
-				exportGeoJSON(myNetwork.getGeojson())
+				exportGeoJSON(myBeetle.getGeojson())
 				break
 
 			case 'export-kml':
 				const converter = new GeojsonToKml()
-				const kmlString = converter.convert(myNetwork.getGeojson())
+				const kmlString = converter.convert(myBeetle.getGeojson())
 
 				const blob = new Blob([kmlString], { type: 'text/plain' })
 				const url = URL.createObjectURL(blob)
@@ -128,13 +128,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 				URL.revokeObjectURL(url)
 				break
 
-			case 'show-centroids':
-				myNetwork.toggleCentroids(true)
-				document.body.dataset.showCentroids = 'true'
+			case 'add-centroids':
+				myBeetle.toggleCentroids(true)
 				break
-			case 'hide-centroids':
-				myNetwork.toggleCentroids(false)
-				document.body.dataset.showCentroids = 'false'
+			case 'remove-centroids':
+				myBeetle.toggleCentroids(false)
 				break
 
 			case 'send-to-map':
@@ -144,24 +142,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 				
 			case 'empty-map':
 				console.log('empty')
-				myNetwork.empty()
+				myBeetle.empty()
 				location.reload()
 				break
 
 			case 'map-style-apian':
-				myNetwork.setMapStyle('apian')
+				myBeetle.setMapStyle('apian')
 				break
 
 			case 'map-style-light':
-				myNetwork.setMapStyle('light')
+				myBeetle.setMapStyle('light')
 				break
 
 			case 'map-style-dark':
-				myNetwork.setMapStyle('dark')
+				myBeetle.setMapStyle('dark')
 				break
 
 			case 'map-style-satellite':
-				myNetwork.setMapStyle('satellite')
+				myBeetle.setMapStyle('satellite')
 				break
 
 			case 'options-view':

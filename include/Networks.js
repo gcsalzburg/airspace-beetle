@@ -83,13 +83,13 @@ export default class{
 
 	// **********************************************************	
 
-	// TODO: Merge the two functions below into one
-
 	importGeoJSON = async (locations) => {
+
+		console.log('load!')
 
 		// delete everything that was there before
 		for(let network of this.networks){
-			network.empty()
+			network.removeMarkers()
 		}
 		this.networks = []
 
@@ -173,6 +173,7 @@ export default class{
 	setDroneMaxRange = (range) => {
 		this.range.max = range
 		this.routes.setMaxRange(range)
+		this.networks.forEach(network => network.updateCentroidRange(range))
 		this._renderDOMList()
 	}
 	setDroneMinRange = (range) => {
@@ -186,8 +187,12 @@ export default class{
 	}
 
 	setMarkerColor = (colorMode) => {
-		for(let network of this.networks){
-			network.setMarkerColor(colorMode)
+		this.networks.forEach(network => network.setMarkerColor(colorMode))
+	}
+
+	toggleCentroids = (state) => {
+		if(state){
+			this.networks.filter(network => network.isVisible).forEach(network => network.addCentroid(this.range.max))
 		}
 	}
 	
