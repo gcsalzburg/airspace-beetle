@@ -167,7 +167,7 @@ export default class{
 					this.saveToStorage()
 				},
 				onRouteMouseOver: (length) => {
-					this.setFollowerDistance(length)	// Set the follower with distance
+					this.setFollowerText(`${Math.round(length*10)/10} km`, 'route')	// Set the follower with distance
 					this.setCursor('routeHover')		// Set cursor
 				},
 				onRouteMouseLeave: () => {
@@ -316,8 +316,8 @@ export default class{
 	}
 
 	// Helpers for the follower that shows the total distance
-	setFollowerDistance = (distance) => {
-		this.options.follower.set(`${Math.round(distance*10)/10} km`, {style: 'route'})
+	setFollowerText = (msg, style) => {
+		this.options.follower.set(msg, {style: style})
 	}
 	clearFollower = () => {
 		this.options.follower.clear()
