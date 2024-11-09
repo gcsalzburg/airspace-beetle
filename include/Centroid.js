@@ -61,9 +61,11 @@ export default class{
 	}
 
 	remove = () => {
-		this.hide()
-		this.options.map.removeLayer(this.options.centreHubLineName)
-		this.options.map.removeSource(this.options.centreHubLineName)
+		if(this.options.map.getSource(this.options.centreHubLineName)){
+			this.circle.remove()
+			this.options.map.removeLayer(this.options.centreHubLineName)
+			this.options.map.removeSource(this.options.centreHubLineName)
+		}
 	}
 
 	// **********************************************************

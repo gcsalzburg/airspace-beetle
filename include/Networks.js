@@ -21,6 +21,7 @@ export default class{
 		this.options = {...this.options, ...options}
 		this.map = this.options.map
 
+		// ************
 		// Create a routes layer, which is way more performant to do it in one place here
 		this.routes = new Routes({
 			map: this.map,
@@ -38,22 +39,21 @@ export default class{
 
 		this.routes.init()
 
-
+		// ************
 		// Add hover effects to list of networks on side
 		this.options.listContainer.addEventListener('mousemove', (e) => {
 			const network = e.target.closest('.network')
-			if(network){
-				if(network.classList.contains('isVisible')){
-					this._temporaryShowOnly(network.dataset.name)
-				}else{
-					this._removeTemporaryShow()
-				}
+			if(network && e.target.classList.contains('num') && network.classList.contains('isVisible')){
+				this._temporaryShowOnly(network.dataset.name)
+			}else{
+				this._removeTemporaryShow()
 			}
 		})
 		this.options.listContainer.addEventListener('mouseleave', (e) => {
 			this._removeTemporaryShow()
 		})
 
+		// ************
 		// Add click effects to list of networks on the side
 		this.options.listContainer.addEventListener('click', (e) => {
 			e.preventDefault()
@@ -84,8 +84,6 @@ export default class{
 	// **********************************************************	
 
 	importGeoJSON = async (locations) => {
-
-		console.log('load!')
 
 		// delete everything that was there before
 		for(let network of this.networks){
@@ -145,25 +143,57 @@ export default class{
 			type: "FeatureCollection",
 			features: this.networks.filter(network => network.isVisible).reduce((routesArray, network) => [...routesArray, ...(network.getRoutes())], [])
 		})
+		this.networks.forEach(network => {
+			if(network.centroid){
+				network.addCentroid(this.range.max)
+			}
+		})
 	}
 
 	// **********************************************************	
 	// Getters
 
-	getLocations = () => {
+	getLocations = (filtered = false) => {
+		let features
+		if(filtered){
+			features = this.networks.reduce((featuresArray, network) => [...featuresArray, ...(network.getLocations().filter(location => location.properties.isVisible && location.properties.isInclude))], [])
+		}else{
+			features = this.networks.reduce((featuresArray, network) => [...featuresArray, ...(network.getLocations())], [])	
+		}
 		return {
 			type: "FeatureCollection",
-			features: this.networks.reduce((featuresArray, network) => [...featuresArray, ...(network.locations.features)], [])				
+			features: features			
 		}
 	}
+
+	getRoutes = () => {
+		const routes = this.networks.filter(network => network.isVisible).reduce((routesArray, network) => [...routesArray, ...(network.getRoutes())], [])	
+		return {
+			type: "FeatureCollection",
+			features: routes			
+		}
+	}
+
+	getRoutesInRange = () => {
+		const routes = this.networks.filter(network => network.isVisible).reduce((routesArray, network) => [...routesArray, ...(network.getRoutesInRange(this.range.min, this.range.max))], [])	
+		return {
+			type: "FeatureCollection",
+			features: routes			
+		}
+	}
+
 
 	getTotals = () => {
 		return {
 			numRoutes: this.networks.filter(network => network.isVisible).reduce((sum, network) => sum + network.getRoutesInRange(this.range.min, this.range.max).length, 0),
-			numLocations: this.getLocations().features.length,
-			numNetworks: this.networks.length,
+			numLocations: this.getLocations(true).features.length,
+			numNetworks: this.networks.filter(network => network.isVisible).length,
 			maxRouteLength: this.networks.reduce((max, network) => Math.max(max, network.getRouteProperties().maxLength), 0)
 		}
+	}
+
+	getNetworkColors = () => {
+		return this.networks.reduce((networksArray, network) => [...networksArray, {name: network.name, color: network.color}], [])
 	}
 
 	// **********************************************************	
@@ -193,6 +223,8 @@ export default class{
 	toggleCentroids = (state) => {
 		if(state){
 			this.networks.filter(network => network.isVisible).forEach(network => network.addCentroid(this.range.max))
+		}else{
+			this.networks.filter(network => network.isVisible).forEach(network => network.removeCentroid())
 		}
 	}
 	
@@ -222,7 +254,7 @@ export default class{
 		state ? network.show() : network.hide()
 
 		await this.render()
-		state ? this._temporaryShowOnly(networkName) : this._removeTemporaryShow()
+	//	state ? this._temporaryShowOnly(networkName) : this._removeTemporaryShow()
 
 		this._renderDOMList()
 	}

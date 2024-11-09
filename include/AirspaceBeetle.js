@@ -28,7 +28,8 @@ export default class{
 			others: 1
 		},
 		routeColor: 'network',
-		markerColor: 'network'
+		markerColor: 'network',
+		showCentroids: false
 	}
  
 	// Default options are below
@@ -193,7 +194,7 @@ export default class{
 	// Map handlers / manipulation etc
 
 	_zoomToLocations = () => {
-		const bbox = turf.bbox(this.networks.getLocations())
+		const bbox = turf.bbox(this.networks.getLocations(true))
 		this.map.fitBounds(bbox,{
 			padding: 20
 		})
@@ -210,19 +211,19 @@ export default class{
 	getGeojson = () => {
 
 		// Get the data we want to return
-		const routes = this.routes.getRoutes()
-		const locations = this.networks.getLocations().features.filter(location => location.properties.isInclude && location.properties.isVisible)
+		const routes = this.networks.getRoutesInRange().features
+		const locations = this.networks.getLocations(true).features
 
 		// Add simple-style properties
-		const colors = this.networks.get()
+		const networkColors = this.networks.getNetworkColors()
 		for(let route of routes){
-			route.properties['stroke'] = colors.find(t => t.name == route.properties.trust).color			
+			route.properties.stroke = networkColors.find(network => network.name == route.properties.trust).color			
 		}
 		for(let location of locations){
-			location.properties['marker-color'] = colors.find(t => t.name == location.properties.trust).color			
+			location.properties['marker-color'] = networkColors.find(network => network.name == location.properties.trust).color				
 		}
 
-		// Return is one big featurecollection
+		// Return as one big featurecollection
 		return {
 			type: "FeatureCollection",
 			features: [...routes, ...locations]
@@ -262,6 +263,8 @@ export default class{
 
 	toggleCentroids = (state) => {
 		this.networks.toggleCentroids(state)
+		this.featureOptions.showCentroids = state
+		this.saveToStorage()
 	}
 
 	// **********************************************************
@@ -382,6 +385,7 @@ export default class{
 				this.networks.setDroneMinRange(this.featureOptions.droneMinRange)
 				this.networks.setRouteColor(this.featureOptions.routeColor)
 				this.networks.setMarkerColor(this.featureOptions.markerColor)
+				this.networks.toggleCentroids(this.featureOptions.showCentroids)
 
 				this._recalculateStats()
 			}

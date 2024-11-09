@@ -19,7 +19,6 @@ export default class{
 		features: []
 	}
 
-
 	// **********************************************************
 	// Constructor, to merge in options
 
@@ -65,6 +64,10 @@ export default class{
 	// **********************************************************
 	// Getters
 
+	getLocations = () => {
+		return this.locations.features
+	}
+
 	getRoutes = () => {
 		return this.routes.features
 	}
@@ -106,6 +109,9 @@ export default class{
 		for(let location of this.locations.features){
 			location.properties.isVisible = false
 		}
+		if(this.centroid){
+			this.centroid.hide()
+		}
 	}
 
 	// Hide it all
@@ -113,6 +119,9 @@ export default class{
 		this.isVisible = true
 		for(let location of this.locations.features){
 			location.properties.isVisible = true
+		}
+		if(this.centroid){
+			this.centroid.show()
 		}
 	}
 
@@ -130,8 +139,7 @@ export default class{
 
 	addCentroid = (droneRange) => {
 		if(this.centroid){
-			this.centroid.setDroneRange(droneRange)
-			return
+			this.centroid.remove()
 		}
 		this.centroid = new Centroid({
 			map: this.map,
@@ -141,6 +149,24 @@ export default class{
 			droneRange: droneRange,
 			locations: this.locations.features.filter(location => location.properties.isInclude)
 		})
+	}
+
+	removeCentroid = () => {
+		if(this.centroid){
+			this.centroid.remove()
+		}
+		this.centroid = null
+	}
+
+	showCentroid = () => {
+		if(this.centroid){
+			this.centroid.show()
+		}
+	}
+	hideCentroid = () => {
+		if(this.centroid){
+			this.centroid.hide()
+		}
 	}
 
 	updateCentroidRange = (droneRange) => {
