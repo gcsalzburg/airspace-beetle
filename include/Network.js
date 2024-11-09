@@ -57,7 +57,7 @@ export default class{
 	}
 	
 	getRoutesInRange = (minRange = 0, maxRange = 10) => {
-		// TODO: Write and use this function
+		return this.routes.features.filter(route => route.properties.pathDistance <= maxRange && route.properties.pathDistance >= minRange)
 	}
 
 	getRouteProperties = () => {
@@ -122,7 +122,7 @@ export default class{
 		this.routes.features = []
 
 		// Iterate over, find hubs and draw lines from there
-		for (const hubLocation of locations.filter(location => location.properties.isHub && location.properties.isVisible)) {
+		for (const hubLocation of locations.filter(location => location.properties.isHub)) {
 			// Only build routes to/from the hubs
 			const trust = hubLocation.properties.trust
 			const hubCoords = hubLocation.geometry.coordinates
@@ -147,7 +147,7 @@ export default class{
 						trust:			trust,
 						nodeType:		node.properties.type,
 						color: 			this.options.color,
-						isVisible:		true
+						isVisible:		node.properties.isVisible
 					},
 					geometry: {
 						type: 'LineString',

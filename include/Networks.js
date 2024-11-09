@@ -44,14 +44,14 @@ export default class{
 			const network = e.target.closest('.network')
 			if(network){
 				if(network.classList.contains('isVisible')){
-					this._showOnly(network.dataset.name)
+					this._temporaryShowOnly(network.dataset.name)
 				}else{
-					this._removeShowOnly()
+					this._removeTemporaryShow()
 				}
 			}
 		})
 		this.options.listContainer.addEventListener('mouseleave', (e) => {
-			this._removeShowOnly()
+			this._removeTemporaryShow()
 		})
 
 		// Add click effects to list of networks on the side
@@ -157,7 +157,7 @@ export default class{
 
 	getTotals = () => {
 		return {
-			numRoutes: this.networks.filter(network => network.isVisible).reduce((sum, network) => sum + network.getRoutes().filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min)).length, 0),
+			numRoutes: this.networks.filter(network => network.isVisible).reduce((sum, network) => sum + network.getRoutesInRange(this.range.min, this.range.max).length, 0),
 			numLocations: this.getLocations().features.length,
 			numNetworks: this.networks.length,
 			maxRouteLength: this.networks.reduce((max, network) => Math.max(max, network.getRouteProperties().maxLength), 0)
@@ -191,51 +191,34 @@ export default class{
 		}
 	}
 	
-	// **********************************************************	
+	// **********************************************************
+	// For hovering only
 
-	_showOnly = (networkName) => {		
+	_temporaryShowOnly = (networkName) => {		
 		for(let network of this.networks){
 			network.markers.filterByNetwork(networkName)
-			this.routes.filterByNetwork(networkName)
 		}
+		this.routes.filterByNetwork(networkName)
 	}
 
-	_removeShowOnly = () => {
+	_removeTemporaryShow = () => {
 		for(let network of this.networks){
 			network.markers.filterByNetwork()
-			this.routes.filterByNetwork()
 		}
+		this.routes.filterByNetwork()
 	}
 
-	_renderDOMList = () => {
-		if(this.options.listContainer){
-			// Update the list
-			this.options.listContainer.innerHTML = this.networks.reduce((html, network) => {
-				const stats = network.getRouteProperties()
-				const routesInRange = network.getRoutes().filter(route => (route.properties.pathDistance <= this.range.max && route.properties.pathDistance >= this.range.min)).length
-				const networkHTML = `<div class="network ${network.isVisible ? 'isVisible' : ''}" data-name="${network.name}"><span class="num" style="background-color: ${network.color}">${routesInRange} / ${stats.totalRoutes}</span> ${network.name}</div>`
-				return html + networkHTML
-			}, '')
-
-			// Add show and hide all buttons
-			this.options.listContainer.insertAdjacentHTML('afterBegin', `<div class="show-hide-all-buttons"><a href="#" class="show-all">Show all</a> <a href="#" class="hide-all">Hide all</a></div>`)
-		}
-	}
-
+	// **********************************************************	
+	// Clicking on list, to make change permanent
 
 	_showHideNetwork = async (networkName, state) => {
 
 		const network = this.networks.find(item => item.name == networkName)
-
-		if(state){
-			network.show()
-			this._showOnly(networkName)
-		}else{
-			network.hide()
-			this._removeShowOnly()
-		}
+		state ? network.show() : network.hide()
 
 		await this.render()
+		state ? this._temporaryShowOnly(networkName) : this._removeTemporaryShow()
+
 		this._renderDOMList()
 	}
 
@@ -259,4 +242,32 @@ export default class{
 		await this.render()
 		this._renderDOMList()
 	}
+
+	// **********************************************************	
+	// Displaying list on side
+
+	_renderDOMList = () => {
+		// Sort
+		this._sortNetworksList()
+
+		// Update the list
+		this.options.listContainer.innerHTML = this.networks.reduce((html, network) => {
+			const stats = network.getRouteProperties()
+			const routesInRange = network.getRoutesInRange(this.range.min, this.range.max).length
+			const networkHTML = `<div class="network ${network.isVisible ? 'isVisible' : ''}" data-name="${network.name}"><span class="num" style="background-color: ${network.color}">${routesInRange} / ${stats.totalRoutes}</span> ${network.name}</div>`
+			return html + networkHTML
+		}, '')
+
+		// Add show and hide all buttons
+		this.options.listContainer.insertAdjacentHTML('afterBegin', `<div class="show-hide-all-buttons"><a href="#" class="show-all">Show all</a> <a href="#" class="hide-all">Hide all</a></div>`)
+	}
+
+	_sortNetworksList = () => {
+		// Sort list of items now
+		this.networks.sort((a,b) => b.name.localeCompare(a.name))
+		this.networks.sort((a,b) => a.getRoutesInRange(this.range.min, this.range.max).length - b.getRoutesInRange(this.range.min, this.range.max).length).reverse()
+	}
+
+	// **********************************************************	
+
 }

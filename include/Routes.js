@@ -31,7 +31,8 @@ export default class{
 
 		// Just in case we call this again (sometimes happen when changing base map style)
 		if(this.options.map.getSource(this.layerName)){
-			this.remove()
+			this.options.map.removeLayer(this.layerName)
+			this.options.map.removeSource(this.layerName)
 		}
 
 		// Add the routes source and layer to the map
@@ -121,11 +122,6 @@ export default class{
 			this.options.map.on('sourcedata', checkData)
 	  })
 		return true
-	}
-
-	remove = () => {
-		this.options.map.removeLayer(this.layerName)
-		this.options.map.removeSource(this.layerName)
 	}
 
 	// **********************************************************
