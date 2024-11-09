@@ -64,22 +64,15 @@ export default class{
 				if(!el.classList.contains('isVisible')){
 					return
 				}
-				if(!feature.properties.isHub){
-					if(e.shiftKey){
-						if(!feature.properties.isInclude){
-							return
-						}
-						// Turning into the hub!
-						const currentHub = locations.find(location => location.properties.trust == feature.properties.trust && location.properties.isHub)
-						currentHub.properties.isHub = false
-						feature.properties.isHub = true
-						this.options.onHubChange(currentHub.properties.name, feature.properties.name)
-					}else{
-						// Toggling to exclude it
-						feature.properties.isInclude = !feature.properties.isInclude
-						el.classList.toggle('isInclude', feature.properties.isInclude)
-						this.options.onToggleInclude(feature.properties.name, feature.properties.isInclude)
-					}
+				if(e.shiftKey && feature.properties.isInclude){
+					// Toggling hub state
+					feature.properties.isHub = !feature.properties.isHub
+					this.options.onHubChange(feature.properties.name, feature.properties.isHub)
+				}else if(!feature.properties.isHub){
+					// Toggling to exclude it (we can't toggle hubs, gotta remove them first to avoid mistakes)
+					feature.properties.isInclude = !feature.properties.isInclude
+					el.classList.toggle('isInclude', feature.properties.isInclude)
+					this.options.onToggleInclude(feature.properties.name, feature.properties.isInclude)
 				}
 			})
 		}

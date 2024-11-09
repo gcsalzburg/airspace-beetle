@@ -108,8 +108,8 @@ export default class{
 					onRouteMouseLeave: () => {
 						this.options.onRouteMouseLeave()
 					},
-					onChange: () => {
-						this.render()
+					onChange: async () => {
+						await this.render()
 						this.options.onChange()
 					},
 
@@ -181,7 +181,6 @@ export default class{
 			features: routes			
 		}
 	}
-
 
 	getTotals = () => {
 		return {

@@ -33,9 +33,8 @@ export default class{
 		this.markers = new Markers({
 			map: this.map,
 			color: this.color,
-			onHubChange: async (oldHub, newHub) => {
-				this.locations.features.find(location => location.properties.name == oldHub).properties.isHub = false
-				this.locations.features.find(location => location.properties.name == newHub).properties.isHub = true
+			onHubChange: async (hub, state) => {
+				this.locations.features.find(location => location.properties.name == hub).properties.isHub = state
 				this.options.onChange()
 			},
 			onToggleInclude: async (locationName, isInclude) => {
