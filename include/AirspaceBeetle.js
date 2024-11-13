@@ -1,6 +1,7 @@
 import Networks from './Networks.js'
 import RangeSlider from './RangeSlider.js'
 import Select from './Select.js'
+import './Utils.js'
 
 export default class{
 
@@ -71,7 +72,7 @@ export default class{
 				this.featureOptions.droneRange = parseInt(value)
 				this.networks.setDroneMaxRange(this.featureOptions.droneRange)
 				this._recalculateStats()
-				this.saveToStorage()
+				this._saveToStorage()
 			}
 		})
 		this.minRangeSlider = new RangeSlider({
@@ -86,7 +87,7 @@ export default class{
 				this.featureOptions.droneMinRange = parseInt(value)
 				this.networks.setDroneMinRange(this.featureOptions.droneMinRange)
 				this._recalculateStats()
-				this.saveToStorage()
+				this._saveToStorage()
 			}
 		})
 
@@ -116,7 +117,7 @@ export default class{
 			onChange: (colorMode) => {
 				this.featureOptions.markerColor = colorMode
 				this.networks.setMarkerColor(colorMode)
-				this.saveToStorage()
+				this._saveToStorage()
 			}
 		})
 		this.routeColorSelect = new Select({
@@ -133,7 +134,7 @@ export default class{
 			onChange: (colorMode) => {
 				this.featureOptions.routeColor = colorMode
 				this.networks.setRouteColor(colorMode)
-				this.saveToStorage()
+				this._saveToStorage()
 			}
 		})
 
@@ -165,7 +166,7 @@ export default class{
 				onChange: () => {
 					// Save to storage
 					this._recalculateStats()
-					this.saveToStorage()
+					this._saveToStorage()
 				},
 				onRouteMouseOver: (length) => {
 					this.setFollowerText(`${Math.round(length*10)/10} km`, 'route')	// Set the follower with distance
@@ -184,7 +185,7 @@ export default class{
 		// Set handler for the map changing
 		this.map.on('moveend', () => {
 			if(this.networks.getLocations().features.length > 0){
-				this.saveToStorage()
+				this._saveToStorage()
 			}
 		})
 
@@ -244,7 +245,7 @@ export default class{
 		})
 		this.map.setStyle(this.getStyleURLFromStyle(style))
 
-		this.saveToStorage()
+		this._saveToStorage()
 	}
 
 	getStyleURLFromStyle = (style) => {
@@ -264,7 +265,7 @@ export default class{
 	toggleCentroids = (state) => {
 		this.networks.toggleCentroids(state)
 		this.featureOptions.showCentroids = state
-		this.saveToStorage()
+		this._saveToStorage()
 	}
 
 	// **********************************************************
@@ -282,7 +283,59 @@ export default class{
 		await this.networks.importGeoJSON(newLocations)
 		this._recalculateStats()
 		this._zoomToLocations()
-		this.saveToStorage()
+		this._saveToStorage()
+	}
+
+	_importFromStorage = async (storedData) => {
+
+		// Configure map
+		this.map.setCenter(storedData.map.center)
+		this.map.setZoom(storedData.map.zoom)
+
+		// Set UI options
+		this.featureOptions = storedData.featureOptions
+		this.maxRangeSlider.setValue(this.featureOptions.droneRange)
+		this.minRangeSlider.setValue(this.featureOptions.droneMinRange)
+		this.routeColorSelect.setValue(this.featureOptions.routeColor)
+		this.markerColorSelect.setValue(this.featureOptions.markerColor)
+
+		// Add centroid sliders
+		this._createCentroidWeightSliders(storedData.locations.features.countOccurrences("properties.type"))
+
+		// Now load in data to networks object
+		await this.networks.importGeoJSON(storedData.locations)
+
+		// Set saved settings
+		this.networks.setDroneMaxRange(this.featureOptions.droneRange)
+		this.networks.setDroneMinRange(this.featureOptions.droneMinRange)
+		this.networks.setRouteColor(this.featureOptions.routeColor)
+		this.networks.setMarkerColor(this.featureOptions.markerColor)
+		this.networks.toggleCentroids(this.featureOptions.showCentroids)
+
+		// Update numbers
+		this._recalculateStats()
+	}
+
+	_createCentroidWeightSliders = (types) => {
+
+		// Sort by name
+		types.sort((a, b) => a.name.localeCompare(b.name))
+
+		for(let type of types){
+			new RangeSlider({
+				container: this.options.dom.weightsSliders,
+				label: `${type.name}:`,
+				min: 1,
+				max: 100,
+				value: 1,
+				step: 1,
+				valueSuffix: '',
+				onInput: async (value) => {
+					await this.networks.setCentroidWeight(type.name, parseInt(value))
+					this._saveToStorage()
+				}
+			})
+		}
 	}
 
 	// **********************************************************
@@ -363,37 +416,11 @@ export default class{
 
 		if (loadedData) {
 			const loadedDataJSON = JSON.parse(loadedData)
-
-			if(loadedDataJSON.map){
-				this.map.setCenter(loadedDataJSON.map.center)
-				this.map.setZoom(loadedDataJSON.map.zoom)
-			}
-
-			if(loadedDataJSON.featureOptions){
-				this.featureOptions = loadedDataJSON.featureOptions
-
-				this.maxRangeSlider.setValue(this.featureOptions.droneRange)
-				this.minRangeSlider.setValue(this.featureOptions.droneMinRange)
-				this.routeColorSelect.setValue(this.featureOptions.routeColor)
-				this.markerColorSelect.setValue(this.featureOptions.markerColor)
-			}
-
-			if(loadedDataJSON.locations){
-				await this.networks.importGeoJSON(loadedDataJSON.locations)
-
-				this.networks.setDroneMaxRange(this.featureOptions.droneRange)
-				this.networks.setDroneMinRange(this.featureOptions.droneMinRange)
-				this.networks.setRouteColor(this.featureOptions.routeColor)
-				this.networks.setMarkerColor(this.featureOptions.markerColor)
-				this.networks.toggleCentroids(this.featureOptions.showCentroids)
-
-				this._recalculateStats()
-			}
-
+			await this._importFromStorage(loadedDataJSON)
 		}
 	}
 
-	saveToStorage = () => {
+	_saveToStorage = () => {
 		const dataToSave = {
 			locations : this.networks.getLocations(),
 			featureOptions: this.featureOptions,

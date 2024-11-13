@@ -43,13 +43,15 @@ export default class{
 		// Add hover effects to list of networks on side
 		this.options.listContainer.addEventListener('mousemove', (e) => {
 			const network = e.target.closest('.network')
-			if(network && e.target.classList.contains('num') && network.classList.contains('isVisible')){
-				this._temporaryShowOnly(network.dataset.name)
-			}else{
-				this._removeTemporaryShow()
+			if(network && e.target.classList.contains('num')){
+				if(network.classList.contains('isVisible')){
+					this._temporaryShowOnly(network.dataset.name)
+				}else{
+					this._removeTemporaryShow()
+				}
 			}
 		})
-		this.options.listContainer.addEventListener('mouseleave', (e) => {
+		this.options.listContainer.addEventListener('mouseleave', () => {
 			this._removeTemporaryShow()
 		})
 
@@ -223,23 +225,30 @@ export default class{
 		if(state){
 			this.networks.filter(network => network.isVisible).forEach(network => network.addCentroid(this.range.max))
 		}else{
-			this.networks.filter(network => network.isVisible).forEach(network => network.removeCentroid())
+			// Do it for all, so that we remove ones that might even be hidden
+			this.networks.forEach(network => network.removeCentroid())
 		}
+	}
+
+	setCentroidWeight = (locationType, value) => {
+		this.networks.forEach(network => network.setCentroidWeight(locationType, value))
 	}
 	
 	// **********************************************************
 	// For hovering only
 
 	_temporaryShowOnly = (networkName) => {		
-		for(let network of this.networks){
+		for(let network of this.networks.filter(network => network.isVisible)){
 			network.markers.filterByNetwork(networkName)
+			network.name == networkName ? network.showCentroid() : network.hideCentroid()
 		}
 		this.routes.filterByNetwork(networkName)
 	}
 
 	_removeTemporaryShow = () => {
-		for(let network of this.networks){
+		for(let network of this.networks.filter(network => network.isVisible)){
 			network.markers.filterByNetwork()
+			network.showCentroid()
 		}
 		this.routes.filterByNetwork()
 	}

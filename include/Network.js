@@ -56,6 +56,11 @@ export default class{
 	_addLocation = (location) => {
 		const existingLocation = this.locations.features.find(loc => loc.properties.name == location.properties.name)
 		if(!existingLocation){
+			// Add missing properties, just in case
+			if(!location.properties.centroidWeight){
+				location.properties.centroidWeight = 1
+			}
+
 			this.locations.features.push(location)
 		}
 	}
@@ -95,7 +100,7 @@ export default class{
 		}
 
 		if(this.centroid){
-			this.centroid.setLocations(this.locations.features.filter(location => location.properties.isInclude))
+			this.centroid.setLocations(this._getLocationsForCentroid())
 		}
 	}
 
@@ -140,13 +145,15 @@ export default class{
 		if(this.centroid){
 			this.centroid.remove()
 		}
+
+		// Create centroid
 		this.centroid = new Centroid({
 			map: this.map,
 			show: true,
 			color: this.color,
 			trust: this.name,
 			droneRange: droneRange,
-			locations: this.locations.features.filter(location => location.properties.isInclude)
+			locations: this._getLocationsForCentroid()
 		})
 	}
 
@@ -168,9 +175,21 @@ export default class{
 		}
 	}
 
+	_getLocationsForCentroid = () => {
+		return this.locations.features.filter(location => location.properties.isInclude)
+	}
+
 	updateCentroidRange = (droneRange) => {
 		if(this.centroid){
 			this.centroid.setDroneRange(droneRange)
+		}
+	}
+
+	setCentroidWeight = (locationType, value) => {
+		this.locations.features.filter(location => location.properties.type == locationType).forEach(location => location.properties.centroidWeight = value)
+
+		if(this.centroid){
+			this.centroid.setLocations(this._getLocationsForCentroid())
 		}
 	}
 

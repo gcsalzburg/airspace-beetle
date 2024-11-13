@@ -62,7 +62,10 @@ export default class{
 
 	remove = () => {
 		if(this.options.map.getSource(this.options.centreHubLineName)){
-			this.circle.remove()
+			if(this.circle){
+				this.circle.remove()
+				this.circle = null
+			}
 			this.options.map.removeLayer(this.options.centreHubLineName)
 			this.options.map.removeSource(this.options.centreHubLineName)
 		}
@@ -70,14 +73,6 @@ export default class{
 
 	// **********************************************************
 	// Get/set
-
-	isVisible = () => {
-		return 
-	}
-
-	getTrust = () => {
-		return this.options.trust
-	}
 
 	setLocations = (locations) => {
 		if(!locations || locations.length <= 0){
@@ -89,32 +84,11 @@ export default class{
 		this._calculateCenter()
 	}
 
-	setCenter = (coords) => {
-		this.options.center = coords
-		if(this.circle){
-			this.circle.setCenter({lat: coords[1], lng: coords[0]})
-		}
-	}
-
 	setDroneRange = (km) => {
 		this.options.droneRange = km
 		if(this.circle){
 			this.circle.setRadius(km*1000)
 		}
-	}
-
-	setCentreHubLineGeometry = () => {
-		this.options.map.getSource(this.options.centreHubLineName).setData({
-				'type': 'Feature',
-				'properties': {},
-				'geometry': {
-					'type': 'LineString',
-					'coordinates': [
-						this.options.center,
-						this.options.hubCenter
-					]
-				}
-		})
 	}
 
 	// **********************************************************
@@ -123,7 +97,7 @@ export default class{
 	show = () => {
 
 		if(this.circle){
-			this.hide()
+			return
 		}
 
 		// Draw centroid
@@ -153,6 +127,32 @@ export default class{
 	// **********************************************************
 	// Internal calcs
 
+	_setCenter = (coords) => {
+		this.options.center = coords
+		if(this.circle){
+			this.circle.setCenter({lat: coords[1], lng: coords[0]})
+		}
+	}
+
+
+	_setCentreHubLineGeometry = () => {
+		// TODO: Draw dashed lines to each of the hubs in the circle
+		// TODO: Add a diamond marker on the centre of the circle
+		// TODO: Halo or outline (maybe a solid ring around it, same as the ring around the whole circle) the location nearest to the centre of the centroid
+		// TODO: Might need a getBestHubLocation() which we can call from Network class for this
+		this.options.map.getSource(this.options.centreHubLineName).setData({
+				'type': 'Feature',
+				'properties': {},
+				'geometry': {
+					'type': 'LineString',
+					'coordinates': [
+						this.options.center,
+						this.options.hubCenter
+					]
+				}
+		})
+	}
+
 	_calculateCenter = () => {
 		// Explanations: https://turfjs.org/docs/api/centerMedian
 		// https://turfjs.org/docs/api/centerMean
@@ -162,8 +162,8 @@ export default class{
 		},{
 			weight: 'centroidWeight'
 		})
-		this.setCenter(centerOfMass.geometry.coordinates)
-		this.setCentreHubLineGeometry()
+		this._setCenter(centerOfMass.geometry.coordinates)
+		this._setCentreHubLineGeometry()
 	}
 
 }
