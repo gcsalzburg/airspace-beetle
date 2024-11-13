@@ -24,13 +24,10 @@ export default class{
 		droneRange: 10,
 		droneMinRange: 0,
 		snapDistance: 0.3, // kilometers
-		weights: {
-			hospitals: 1,
-			others: 1
-		},
 		routeColor: 'network',
 		markerColor: 'network',
-		showCentroids: false
+		showCentroids: false,
+		centroidWeights: {}
 	}
  
 	// Default options are below
@@ -281,6 +278,10 @@ export default class{
 	// Update geoJSON from updated CSV data
 	importNewLocations = async (newLocations) => {
 		await this.networks.importGeoJSON(newLocations)
+
+		// Add centroid sliders
+		this._createCentroidWeightSliders(newLocations.features.countOccurrences("properties.type"))
+
 		this._recalculateStats()
 		this._zoomToLocations()
 		this._saveToStorage()
@@ -322,16 +323,19 @@ export default class{
 		types.sort((a, b) => a.name.localeCompare(b.name))
 
 		for(let type of types){
+
 			new RangeSlider({
 				container: this.options.dom.weightsSliders,
 				label: `${type.name}:`,
 				min: 1,
 				max: 100,
-				value: 1,
+				value: this.featureOptions?.centroidWeights?.[type.name] ?? 1,
 				step: 1,
 				valueSuffix: '',
-				onInput: async (value) => {
-					await this.networks.setCentroidWeight(type.name, parseInt(value))
+				onInput: async (rawValue) => {
+					const value = parseInt(rawValue)
+					this.featureOptions.centroidWeights[type.name] = value
+					await this.networks.setCentroidWeight(type.name, value)
 					this._saveToStorage()
 				}
 			})
